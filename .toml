@@ -1,0 +1,5 @@
+[build]
+command = "go build -o gin-gonic-gom main.go"
+
+[start]
+command = "./api-meteor-restaurant"
