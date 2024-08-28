@@ -47,16 +47,15 @@ func (a *SubjectImplementService) CreateSubject(subjectInput Models.SubjectInput
 	// check và trả về mã học kỳ và set vào trong TermID
 	// create một subject
 	subjectData := Models.SubjectModel{
-		ID:           primitive.NewObjectID(),
-		SubjectCode:  subjectInput.SubjectCode,
-		SubjectName:  subjectInput.SubjectName,
-		Credits:      subjectInput.Credits,
-		IsMandatory:  subjectInput.IsMandatory,
-		Department:   subjectInput.Department,
-		AcademicYear: subjectInput.AcademicYear,
-		TermID:       primitive.NewObjectID(),
-		CreatedAt:    timeHoChiMinhLocal,
-		UpdatedAt:    timeHoChiMinhLocal,
+		ID:          primitive.NewObjectID(),
+		SubjectCode: subjectInput.SubjectCode,
+		SubjectName: subjectInput.SubjectName,
+		Credits:     subjectInput.Credits,
+		IsMandatory: subjectInput.IsMandatory,
+		Department:  subjectInput.Department,
+		TermID:      primitive.NewObjectID(),
+		CreatedAt:   timeHoChiMinhLocal,
+		UpdatedAt:   timeHoChiMinhLocal,
 	}
 	_, err = a.subjectcollection.InsertOne(a.ctx, subjectData)
 	if err != nil {
@@ -65,13 +64,14 @@ func (a *SubjectImplementService) CreateSubject(subjectInput Models.SubjectInput
 	return nil
 }
 
-func (a *SubjectImplementService) UpdateSubject(id primitive.ObjectID, subjectUpdate bson.M) (Models.SubjectModel, error) {
+func (a *SubjectImplementService) UpdateSubject(id primitive.ObjectID, subjectUpdate Models.SubjectInput) (Models.SubjectModel, error) {
 	timeHoChiMinhLocal, _ := utils.GetCurrentTimeInLocal("Asia/Ho_Chi_Minh")
 	filter := bson.M{
 		"_id": id,
 	}
-	subjectUpdate["updated_at"] = timeHoChiMinhLocal
-	subjectDataUpdate := bson.M{"$set": subjectUpdate}
+	subjectData := utils.BuildUpdateQuery(subjectUpdate)
+	subjectData["updated_at"] = timeHoChiMinhLocal
+	subjectDataUpdate := bson.M{"$set": subjectData}
 	var subjectRes Models.SubjectModel
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 	err := a.subjectcollection.FindOneAndUpdate(a.ctx, filter, subjectDataUpdate, opts).Decode(&subjectRes)

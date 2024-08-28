@@ -18,14 +18,29 @@ type SubjectModel struct {
 	UpdatedAt    time.Time          `json:"updated_at" bson:"updated_at"`
 }
 
+//func (a *SubjectModel) checkFieldName(tag, key string, s interface{}) (fieldName string) {
+//	rt := reflect.TypeOf(s)
+//	if rt.Kind() != reflect.Struct {
+//		panic("bad type")
+//	}
+//	for i := 0; i < rt.NumField(); i++ {
+//		f := rt.Field(i)
+//		v := strings.Split(f.Tag.Get(key), ",")[0] // use split to ignore tag "options" like omitempty, etc.
+//		fmt.Println("Key: -----> ", v)
+//		if v == tag {
+//			return f.Name
+//		}
+//	}
+//	return ""
+//}
+
 type SubjectInput struct {
-	SubjectCode  string `json:"subject_code"` // Mã học phần
-	SubjectName  string `json:"subject_name"`
-	Credits      int    `json:"credits"`
-	IsMandatory  bool   `json:"is_mandatory"` // Học phần bắt buộc
-	Term         string `json:"term"`
-	AcademicYear string `json:"academic_year"`
-	Department   string `json:"department"` // Khoa
+	SubjectCode string `json:"subject_code"` // Mã học phần
+	SubjectName string `json:"subject_name"`
+	Credits     int    `json:"credits"`
+	IsMandatory bool   `json:"is_mandatory"` // Học phần bắt buộc
+	TermID      string `json:"term_id"`
+	Department  string `json:"department"` // Khoa
 }
 type TermModel struct {
 	ID               primitive.ObjectID `json:"id" bson:"_id"`

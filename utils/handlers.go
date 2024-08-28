@@ -2,7 +2,9 @@ package utils
 
 import (
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"reflect"
 	"time"
 )
 
@@ -63,4 +65,31 @@ func ConvertISO8601ToDate(isoString string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("error parsing ISO 8601 string: %w", err)
 	}
 	return t, nil
+}
+func BuildUpdateQuery(input interface{}) bson.M {
+	update := bson.M{}
+	v := reflect.ValueOf(input)
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldType := v.Type().Field(i)
+		jsonTag := fieldType.Tag.Get("json")
+
+		switch field.Kind() {
+		case reflect.String:
+			if field.String() != "" {
+				update[jsonTag] = field.String()
+			}
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			if field.Int() != 0 {
+				update[jsonTag] = field.Int()
+			}
+		case reflect.Bool:
+			if field.Bool() {
+				update[jsonTag] = field.Bool()
+			}
+		}
+	}
+
+	return update
 }

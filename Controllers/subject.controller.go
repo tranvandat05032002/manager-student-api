@@ -1,14 +1,12 @@
 package Controllers
 
 import (
-	"fmt"
 	"gin-gonic-gom/Middlewares"
 	"gin-gonic-gom/Models"
 	"gin-gonic-gom/Services/subject"
 	"gin-gonic-gom/common"
 	"gin-gonic-gom/utils"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
 	"strconv"
 )
@@ -37,13 +35,12 @@ func (subjectController *SubjectController) CreateSubjectController(ctx *gin.Con
 }
 
 func (subjectController *SubjectController) UpdateSubjectController(ctx *gin.Context) {
-	var subjectInput bson.M
+	var subjectInput Models.SubjectInput
 	id := ctx.Param("id")
 	if err := ctx.ShouldBindJSON(&subjectInput); err != nil {
 		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
 		return
 	}
-	fmt.Println("DataInput ----> ", subjectInput)
 	res, err := subjectController.SubjectService.UpdateSubject(utils.ConvertStringToObjectId(id), subjectInput)
 	if err != nil {
 		common.NewErrorResponse(ctx, http.StatusBadRequest, "Cập nhật môn học thất bại!", err.Error())
@@ -63,7 +60,6 @@ func (subjectController *SubjectController) GetAllSubjectController(ctx *gin.Con
 	if err != nil || page <= 0 {
 		page = 1
 	}
-	fmt.Println("Limit --> ", limit, "page ---> ", page)
 	subjects, total, err := subjectController.SubjectService.GetAllSubject(page, limit)
 	if err != nil {
 		common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
