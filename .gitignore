@@ -11,7 +11,7 @@ pkg/*
 vendor/
 
 ##ENV
-*.env
+#*.env
 tmp/
 uploads/
 #############################
