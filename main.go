@@ -112,5 +112,5 @@ func main() {
 		}
 	}()
 
-	select {} // Giữ chương trình chạy
+	select {} // Giữ chương trình chạy 1
 }
