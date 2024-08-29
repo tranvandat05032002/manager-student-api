@@ -10,6 +10,7 @@ import (
 	"gin-gonic-gom/Services/term"
 	"gin-gonic-gom/Services/user"
 	"gin-gonic-gom/config"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/lpernett/godotenv"
 	"github.com/robfig/cron/v3"
@@ -53,6 +54,22 @@ func InitializeConfig() {
 		os.Mkdir("uploads/images", os.ModePerm)
 	}
 	server = gin.Default()
+	//config TrustedProxies and IPV6
+	server.SetTrustedProxies([]string{
+		"127.0.0.1",                             // Địa chỉ IPv4 localhost
+		"192.168.1.10",                          // Địa chỉ IPv4 proxy tin cậy
+		"::1",                                   // Địa chỉ IPv6 localhost
+		"2405:4802:6563:140:10b3:beb9:c910:16e", // Địa chỉ IPv6 proxy tin cậy
+	})
+	//config cors
+	server.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:8080"}, //client
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Disposition"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 	//serve file
 	server.Static("/static", "./uploads")
 }

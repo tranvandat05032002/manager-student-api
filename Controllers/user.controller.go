@@ -136,8 +136,8 @@ func (userController *UserController) UpdateUser(ctx *gin.Context) {
 		return
 	}
 	result, errCheckMail := userController.UserService.CheckExistEmail(AccountUpdate.Email)
-	if result == true {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailExistMessage, "Email already exists")
+	if result != true {
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailExistMessage, "người dùng không tồn tại trong hệ thống!")
 		return
 	}
 

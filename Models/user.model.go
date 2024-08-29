@@ -13,6 +13,7 @@ type UserModel struct {
 	Password       string              `json:"password,omitempty" bson:"password,omitempty" binding:"required,min=6,max=100"`
 	Avatar         string              `json:"avatar" bson:"avatar" binding:"required,url"`
 	Phone          string              `json:"phone" bson:"phone"`
+	Gender         *bool               `bson:"gender" json:"gender"`
 	Department     string              `json:"department" bson:"department"`
 	DateOfBirth    time.Time           `json:"date_of_birth" bson:"date_of_birth"`
 	EnrollmentDate time.Time           `json:"enrollment_date" bson:"enrollment_date"`
@@ -34,6 +35,7 @@ type UserUpdate struct {
 	Name           string    `json:"name,omitempty"`
 	Avatar         string    `json:"avatar,omitempty"`
 	Phone          string    `json:"phone,omitempty"`
+	Gender         bool      `json:"gender"`
 	Department     string    `json:"department"`
 	DateOfBirth    time.Time `json:"date_of_birth,omitempty"`
 	EnrollmentDate time.Time `json:"enrollment_date,omitempty"`

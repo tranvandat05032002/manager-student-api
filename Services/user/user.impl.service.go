@@ -62,6 +62,7 @@ func (a *UserImplementService) CreateUser(input *Models.CreateUserInput) error {
 		Phone:          input.Phone,
 		Address:        "",
 		Department:     "",
+		Gender:         nil,
 		DateOfBirth:    timeLocalHoChiMinh,
 		EnrollmentDate: timeLocalHoChiMinh,
 		HireDate:       timeLocalHoChiMinh,
@@ -240,6 +241,9 @@ func (a *UserImplementService) UpdateMe(userId string, userData *Models.UserUpda
 	if userData.Name != "" {
 		updateFields["name"] = userData.Name
 	}
+	if userData.Gender {
+		updateFields["gender"] = userData.Gender
+	}
 	if userData.Avatar != "" {
 		updateFields["avatar"] = userData.Avatar
 	}
@@ -295,6 +299,9 @@ func (a *UserImplementService) UpdateUser(account *Models.AccountUpdate, id prim
 	}
 	if account.Name != "" {
 		updateFields["name"] = account.Name
+	}
+	if account.Gender {
+		updateFields["gender"] = account.Gender
 	}
 	if account.Email != "" {
 		updateFields["email"] = account.Email

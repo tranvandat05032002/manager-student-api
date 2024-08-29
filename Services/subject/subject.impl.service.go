@@ -43,10 +43,17 @@ func (a *SubjectImplementService) CreateSubject(subjectInput Models.SubjectInput
 	if err != nil {
 		return err
 	}
-	termId := utils.ConvertStringToObjectId(subjectInput.TermID)
-	filterTerm := bson.M{"_id": termId}
+	//termId := utils.ConvertStringToObjectId(subjectInput.TermID)
+	//filterTerm := bson.M{"_id": termId}
+	filter := bson.M{
+		"$and": []bson.M{
+			{"term_semester": subjectInput.TermSemester},
+			{"term_from_year": subjectInput.TermFromYear},
+			{"term_to_year": subjectInput.TermToYear},
+		},
+	}
 	var term Models.TermModel
-	err = a.termcollection.FindOne(a.ctx, filterTerm).Decode(&term)
+	err = a.termcollection.FindOne(a.ctx, filter).Decode(&term)
 	if err == mongo.ErrNoDocuments {
 		return errors.New("Học kỳ không tồn tại trong hệ thống!")
 	}
