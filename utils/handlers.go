@@ -93,3 +93,19 @@ func BuildUpdateQuery(input interface{}) bson.M {
 
 	return update
 }
+func ConvertISOToDate(isoString string) (string, error) {
+	//layout := "2006-01-02 15:04:05.000+00:00"
+	//if strings.Count(isoString, "+") > 1 || strings.Count(isoString, "-") > 1 {
+	//	lastIndex := strings.LastIndex(isoString, " ")
+	//	isoString = isoString[:lastIndex]
+	//}
+
+	parsedDate, err := time.Parse(time.DateTime, isoString)
+	if err != nil {
+		fmt.Println("Lỗi phân tích ngày:", err)
+		return "", err
+	}
+
+	formattedDate := parsedDate.Format("02-01-2006")
+	return formattedDate, nil
+}

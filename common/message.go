@@ -19,6 +19,7 @@ const (
 	ErrorOTP                   = "Mã OTP không hợp lệ!"
 	ErrorResendOTP             = "Không thể gửi lại mã OTP!"
 	ErrorUpdatePassword        = "Cập nhật mật khẩu thất bại!"
+	ErrorExportFile            = "Xuất file không thành công!"
 )
 
 const (

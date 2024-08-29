@@ -5,6 +5,7 @@ import (
 	"gin-gonic-gom/Controllers"
 	"gin-gonic-gom/Services/major"
 	"gin-gonic-gom/Services/media"
+	statiscal "gin-gonic-gom/Services/statistical"
 	"gin-gonic-gom/Services/subject"
 	"gin-gonic-gom/Services/term"
 	"gin-gonic-gom/Services/user"
@@ -19,26 +20,28 @@ import (
 )
 
 var (
-	server      *gin.Engine
-	us          user.UserService
-	uc          Controllers.UserController
-	ms          media.MediaService
-	mc          Controllers.MediaController
-	mjs         major.MajorService
-	mjc         Controllers.MajorController
-	subs        subject.SubjectService
-	subc        Controllers.SubjectController
-	terms       term.TermService
-	termc       Controllers.TermController
-	ctx         context.Context
-	userco      *mongo.Collection
-	tokenco     *mongo.Collection
-	otpco       *mongo.Collection
-	mediaco     *mongo.Collection
-	majorco     *mongo.Collection
-	subjectco   *mongo.Collection
-	termco      *mongo.Collection
-	mongoClient *mongo.Client
+	server       *gin.Engine
+	us           user.UserService
+	uc           Controllers.UserController
+	ms           media.MediaService
+	mc           Controllers.MediaController
+	mjs          major.MajorService
+	mjc          Controllers.MajorController
+	subs         subject.SubjectService
+	subc         Controllers.SubjectController
+	terms        term.TermService
+	termc        Controllers.TermController
+	statisticals statiscal.StatisticalService
+	statisticalc Controllers.StatisticalController
+	ctx          context.Context
+	userco       *mongo.Collection
+	tokenco      *mongo.Collection
+	otpco        *mongo.Collection
+	mediaco      *mongo.Collection
+	majorco      *mongo.Collection
+	subjectco    *mongo.Collection
+	termco       *mongo.Collection
+	mongoClient  *mongo.Client
 )
 
 func InitializeConfig() {
@@ -78,6 +81,9 @@ func InitializeDatabase() {
 
 	terms = term.NewTermService(termco, ctx)
 	termc = Controllers.NewTerm(terms)
+
+	statisticals = statiscal.NewStatisticalService(termco, ctx)
+	statisticalc = Controllers.NewStatistical(statisticals)
 }
 func main() {
 	InitializeConfig()
@@ -93,6 +99,7 @@ func main() {
 	mjc.RegisterMajorRoutes(basepath)
 	subc.RegisterSubjectRoutes(basepath)
 	termc.RegisterTermRoutes(basepath)
+	statisticalc.RegisterStatisticalRoutes(basepath)
 	loc, _ := time.LoadLocation("Asia/Ho_Chi_Minh")
 	c := cron.New(cron.WithLocation(loc))
 	// 4 giờ sáng mỗi ngày thì cron job sẽ hoạt động để xóa token/otp hết hạn

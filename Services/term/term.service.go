@@ -7,7 +7,7 @@ import (
 
 type TermService interface {
 	CreateTerm(Models.TermInput) error
-	GetTermDetails(primitive.ObjectID) (Models.TermModel, error)
+	GetTermDetails(input Models.TermInput) (Models.TermModel, error)
 	UpdateTerm(primitive.ObjectID, Models.TermInput) (Models.TermModel, error)
 	GetAllTerm(int, int) ([]Models.TermModel, int, error)
 	DeleteTerm(primitive.ObjectID) (int, error)

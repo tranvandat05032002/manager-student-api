@@ -81,8 +81,12 @@ func (termController *TermController) DeleteTermController(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "Xóa học kỳ thành công", nil))
 }
 func (termController *TermController) GetTermDetailsController(ctx *gin.Context) {
-	termId := ctx.Param("id")
-	term, err := termController.TermService.GetTermDetails(utils.ConvertStringToObjectId(termId))
+	var termInput Models.TermInput
+	if err := ctx.ShouldBindJSON(&termInput); err != nil {
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		return
+	}
+	term, err := termController.TermService.GetTermDetails(termInput)
 	if err != nil {
 		common.NewErrorResponse(ctx, http.StatusBadRequest, "Học kỳ không tồn tại!", err.Error())
 		return
@@ -98,7 +102,7 @@ func (termController *TermController) RegisterTermRoutes(rg *gin.RouterGroup) {
 		termroute.Use(Middlewares.AuthValidationBearerMiddleware)
 		{
 			termroute.GET("/all", termController.GetAllTermController)
-			termroute.GET("/details/:id", termController.GetTermDetailsController)
+			termroute.GET("/details", termController.GetTermDetailsController)
 		}
 	}
 	termadminroute := rg.Group("/admin/term")

@@ -23,11 +23,12 @@ func NewTermService(termcollection *mongo.Collection, ctx context.Context) TermS
 		ctx:            ctx,
 	}
 }
-func (a *TermImplementService) CheckTermExist(semester, academicYear string) (bool, error) {
+func (a *TermImplementService) CheckTermExist(term_semester, fromYear, toYear int) (bool, error) {
 	filter := bson.M{
 		"$and": []bson.M{
-			{"term_semester": semester},
-			{"term_academic_year": academicYear},
+			{"term_semester": term_semester},
+			{"term_from_year": fromYear},
+			{"term_to_year": toYear},
 		},
 	}
 	var term Models.TermModel
@@ -42,7 +43,7 @@ func (a *TermImplementService) CheckTermExist(semester, academicYear string) (bo
 }
 func (a *TermImplementService) CreateTerm(termInput Models.TermInput) error {
 	timeHoChiMinhLocal, _ := utils.GetCurrentTimeInLocal("Asia/Ho_Chi_Minh")
-	exists, err := a.CheckTermExist(termInput.TermSemester, termInput.TermAcademicYear)
+	exists, err := a.CheckTermExist(termInput.TermSemester, termInput.TermFromYear, termInput.TermToYear)
 	if err != nil {
 		return err
 	}
@@ -52,13 +53,12 @@ func (a *TermImplementService) CreateTerm(termInput Models.TermInput) error {
 	//check và trả về mã học kỳ và set vào trong TermID
 	// create một subject
 	termData := Models.TermModel{
-		ID:               primitive.NewObjectID(),
-		TermSemester:     termInput.TermSemester,
-		TermAcademicYear: termInput.TermAcademicYear,
-		StartDate:        termInput.StartDate,
-		EndDate:          termInput.EndDate,
-		CreatedAt:        timeHoChiMinhLocal,
-		UpdatedAt:        timeHoChiMinhLocal,
+		ID:           primitive.NewObjectID(),
+		TermSemester: termInput.TermSemester,
+		TermFromYear: termInput.TermFromYear,
+		TermToYear:   termInput.TermToYear,
+		CreatedAt:    timeHoChiMinhLocal,
+		UpdatedAt:    timeHoChiMinhLocal,
 	}
 	_, err = a.termcollection.InsertOne(a.ctx, termData)
 	if err != nil {
@@ -66,9 +66,15 @@ func (a *TermImplementService) CreateTerm(termInput Models.TermInput) error {
 	}
 	return nil
 }
-func (a *TermImplementService) GetTermDetails(id primitive.ObjectID) (Models.TermModel, error) {
+func (a *TermImplementService) GetTermDetails(termInput Models.TermInput) (Models.TermModel, error) {
 	var term Models.TermModel
-	query := bson.M{"_id": id}
+	query := bson.M{
+		"$and": []bson.M{
+			{"term_semester": termInput.TermSemester},
+			{"term_from_year": termInput.TermFromYear},
+			{"term_to_year": termInput.TermToYear},
+		},
+	}
 	err := a.termcollection.FindOne(a.ctx, query).Decode(&term)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
