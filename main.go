@@ -73,7 +73,7 @@ func InitializeDatabase() {
 	mjs = major.NewMajorService(majorco, ctx)
 	mjc = Controllers.NewMajor(mjs)
 
-	subs = subject.NewMajorService(subjectco, ctx)
+	subs = subject.NewMajorService(subjectco, termco, ctx)
 	subc = Controllers.NewSubject(subs)
 
 	terms = term.NewTermService(termco, ctx)

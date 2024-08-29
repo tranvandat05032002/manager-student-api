@@ -14,12 +14,14 @@ import (
 
 type SubjectImplementService struct {
 	subjectcollection *mongo.Collection
+	termcollection    *mongo.Collection
 	ctx               context.Context
 }
 
-func NewMajorService(subjectcollection *mongo.Collection, ctx context.Context) SubjectService {
+func NewMajorService(subjectcollection *mongo.Collection, termcollection *mongo.Collection, ctx context.Context) SubjectService {
 	return &SubjectImplementService{
 		subjectcollection: subjectcollection,
+		termcollection:    termcollection,
 		ctx:               ctx,
 	}
 }
@@ -41,11 +43,19 @@ func (a *SubjectImplementService) CreateSubject(subjectInput Models.SubjectInput
 	if err != nil {
 		return err
 	}
+	termId := utils.ConvertStringToObjectId(subjectInput.TermID)
+	filterTerm := bson.M{"_id": termId}
+	var term Models.TermModel
+	err = a.termcollection.FindOne(a.ctx, filterTerm).Decode(&term)
+	if err == mongo.ErrNoDocuments {
+		return errors.New("Học kỳ không tồn tại trong hệ thống!")
+	}
+	if err != nil {
+		return errors.New("Học kỳ không tồn tại trong hệ thống!")
+	}
 	if exists {
 		return errors.New("Mã môn học đã tồn tại trong hệ thống!")
 	}
-	// check và trả về mã học kỳ và set vào trong TermID
-	// create một subject
 	subjectData := Models.SubjectModel{
 		ID:          primitive.NewObjectID(),
 		SubjectCode: subjectInput.SubjectCode,
@@ -53,7 +63,7 @@ func (a *SubjectImplementService) CreateSubject(subjectInput Models.SubjectInput
 		Credits:     subjectInput.Credits,
 		IsMandatory: subjectInput.IsMandatory,
 		Department:  subjectInput.Department,
-		TermID:      primitive.NewObjectID(),
+		TermID:      term.ID,
 		CreatedAt:   timeHoChiMinhLocal,
 		UpdatedAt:   timeHoChiMinhLocal,
 	}
