@@ -14,7 +14,7 @@ type UserModel struct {
 	Phone          string              `json:"phone" bson:"phone" binding:"required,len=10""`
 	Name           string              `json:"name" bson:"name" binding:"required,min=2,max=100"`
 	Avatar         string              `json:"avatar" bson:"avatar" binding:"required,url"`
-	Gender         bool                `json:"gender" bson:"gender"`
+	Gender         *bool               `json:"gender" bson:"gender"`
 	Department     string              `json:"department" bson:"department"`
 	DateOfBirth    time.Time           `json:"date_of_birth" bson:"date_of_birth"`
 	EnrollmentDate time.Time           `json:"enrollment_date" bson:"enrollment_date"`

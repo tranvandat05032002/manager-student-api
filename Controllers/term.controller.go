@@ -23,7 +23,8 @@ func NewTerm(termService term.TermService) TermController {
 func (termController *TermController) CreateTermController(ctx *gin.Context) {
 	var termInput Models.TermInput
 	if err := ctx.ShouldBindJSON(&termInput); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	err := termController.TermService.CreateTerm(termInput)
@@ -38,7 +39,8 @@ func (termController *TermController) UpdateTermController(ctx *gin.Context) {
 	var termInput Models.TermInput
 	id := ctx.Param("id")
 	if err := ctx.ShouldBindJSON(&termInput); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	res, err := termController.TermService.UpdateTerm(utils.ConvertStringToObjectId(id), termInput)

@@ -26,11 +26,13 @@ func GetCustomErrorMessage(field, tag string) string {
 	case "gt":
 		return field + " phải lớn hơn " + extractValue(field, tag) + " ký tự"
 	case "gte":
-		return field + " phải lớn hơn hoặc bằng " + extractValue(field, tag) + " ký tự"
+		return field + " phải lớn hơn hoặc bằng 1000"
 	case "lt":
 		return field + " phải nhỏ hơn " + extractValue(field, tag) + " ký tự"
 	case "lte":
-		return field + " phải nhỏ hơn hoặc bằng " + extractValue(field, tag) + " ký tự"
+		return field + " phải nhỏ hơn hoặc bằng 2100"
+	case "oneof":
+		return field + "chỉ được 1 hoặc 2 hoặc 3"
 	default:
 		return field + " không hợp lệ"
 	}
@@ -42,16 +44,39 @@ func extractValue(field, tag string) string {
 	} else if field == "Password" && tag == "max" {
 		return "30"
 	}
-	if field == "Name" && tag == "min" {
+	if (field == "Name" && tag == "min") || (field == "MajorName" && tag == "min") {
 		return "2"
-	} else if field == "Name" && tag == "max" {
+	} else if (field == "Name" && tag == "max") || (field == "MajorName" && tag == "max") {
 		return "100"
+	}
+	if field == "MajorId" && tag == "min" {
+		return "4"
+	} else if field == "MajorId" && tag == "max" {
+		return "20"
 	}
 	if field == "Phone" && tag == "len" {
 		return "10"
 	}
 	if field == "OTPCode" && tag == "len" {
 		return "6"
+	}
+	if field == "SubjectCode" && tag == "min" {
+		return "4"
+	} else if field == "SubjectCode" && tag == "max" {
+		return "20"
+	}
+	if field == "SubjectName" && tag == "min" {
+		return "2"
+	} else if field == "SubjectName" && tag == "max" {
+		return "100"
+	}
+	if field == "Department" && tag == "min" {
+		return "2"
+	} else if field == "Department" && tag == "max" {
+		return "100"
+	}
+	if field == "Credits" && tag == "gt" {
+		return "0"
 	}
 	return ""
 }

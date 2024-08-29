@@ -24,7 +24,8 @@ func NewMajor(majorService major.MajorService) MajorController {
 func (majorController *MajorController) CreateMajorController(ctx *gin.Context) {
 	var major Models.MajorModel
 	if err := ctx.ShouldBindJSON(&major); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	err := majorController.MajorService.CreateMajor(&major)
@@ -38,7 +39,8 @@ func (majorController *MajorController) UpdateMajorController(ctx *gin.Context) 
 	var majorUpdateReq Models.MajorUpdateReq
 	id := ctx.Param("id")
 	if err := ctx.ShouldBindJSON(&majorUpdateReq); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	res, err := majorController.MajorService.UpdateMajor(utils.ConvertStringToObjectId(id), &majorUpdateReq)

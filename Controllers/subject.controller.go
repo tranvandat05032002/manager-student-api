@@ -23,7 +23,8 @@ func NewSubject(subjectService subject.SubjectService) SubjectController {
 func (subjectController *SubjectController) CreateSubjectController(ctx *gin.Context) {
 	var subjectInput Models.SubjectInput
 	if err := ctx.ShouldBindJSON(&subjectInput); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	err := subjectController.SubjectService.CreateSubject(subjectInput)
@@ -38,7 +39,8 @@ func (subjectController *SubjectController) UpdateSubjectController(ctx *gin.Con
 	var subjectInput Models.SubjectInput
 	id := ctx.Param("id")
 	if err := ctx.ShouldBindJSON(&subjectInput); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	res, err := subjectController.SubjectService.UpdateSubject(utils.ConvertStringToObjectId(id), subjectInput)
