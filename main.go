@@ -12,6 +12,7 @@ import (
 	"gin-gonic-gom/config"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/lpernett/godotenv"
 	"github.com/robfig/cron/v3"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -43,6 +44,7 @@ var (
 	subjectco    *mongo.Collection
 	termco       *mongo.Collection
 	mongoClient  *mongo.Client
+	validate     *validator.Validate
 )
 
 func InitializeConfig() {
@@ -70,6 +72,7 @@ func InitializeConfig() {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+	validate = validator.New()
 	//serve file
 	server.Static("/static", "./uploads")
 }

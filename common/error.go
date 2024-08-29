@@ -14,10 +14,10 @@ import (
 type ErrorRes struct {
 	Status  int    `json:"status"`
 	Message string `json:"message,omitempty"`
-	Error   string `json:"error,omitempty"`
+	Error   interface{} `json:"error,omitempty"`
 }
 
-func NewErrorResponse(c *gin.Context, status int, message string, err string) {
+func NewErrorResponse(c *gin.Context, status int, message string, err interface{}) {
 	errorResponse := ErrorRes{
 		Status:  status,
 		Message: message,

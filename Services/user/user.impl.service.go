@@ -117,7 +117,7 @@ func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Con
 	}
 	passwordIsValid := utils.CheckPasswordHash(authInput.Password, foundUser.Password)
 	if passwordIsValid != true {
-		common.NewErrorResponse(c, http.StatusUnauthorized, common.ErrorPassword, "")
+		common.NewErrorResponse(c, http.StatusUnauthorized, common.ErrorPassword, "Mật khẩu không hợp lệ")
 		return
 	}
 	defer cancel()

@@ -15,7 +15,7 @@ type OTPModel struct {
 }
 type OTPReq struct {
 	Email   string `json:"email" bson:"email" binding:"required,email"`
-	OTPCode string `json:"otp_code" bson:"otp_code" binding:"required"`
+	OTPCode string `json:"otp_code" bson:"otp_code" binding:"required,len=6"`
 }
 type OTPRes struct {
 	OTPCode   string    `json:"otp_code" bson:"otp_code"`

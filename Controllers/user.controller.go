@@ -24,7 +24,8 @@ func New(userService user.UserService) UserController {
 func (userController *UserController) CreateUser(ctx *gin.Context) {
 	var user Models.CreateUserInput
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	switch user.Role {
@@ -64,7 +65,8 @@ func (userController *UserController) CreateUser(ctx *gin.Context) {
 func (useController *UserController) LoginUser(ctx *gin.Context) {
 	var user Models.AuthInput
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	useController.UserService.LoginUser(&user, ctx)
@@ -112,7 +114,8 @@ func (userController *UserController) GetAll(ctx *gin.Context) {
 func (userController *UserController) UpdateMe(ctx *gin.Context) {
 	var UserUpdate Models.UserUpdate
 	if err := ctx.ShouldBindJSON(&UserUpdate); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	userId, exists := ctx.Get("userId")
@@ -132,17 +135,8 @@ func (userController *UserController) UpdateUser(ctx *gin.Context) {
 	var AccountUpdate Models.AccountUpdate
 	id := ctx.Param("id")
 	if err := ctx.ShouldBindJSON(&AccountUpdate); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
-		return
-	}
-	result, errCheckMail := userController.UserService.CheckExistEmail(AccountUpdate.Email)
-	if result != true {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailExistMessage, "người dùng không tồn tại trong hệ thống!")
-		return
-	}
-
-	if errCheckMail != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailExistMessage, errCheckMail.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	user, err := userController.UserService.UpdateUser(&AccountUpdate, utils.ConvertStringToObjectId(id))
@@ -174,7 +168,8 @@ func (userController *UserController) ChangePassword(ctx *gin.Context) {
 		return
 	}
 	if err := ctx.ShouldBindJSON(&PasswordInput); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	err := userController.UserService.ChangePassword(userId.(string), &PasswordInput)
@@ -187,7 +182,8 @@ func (userController *UserController) ChangePassword(ctx *gin.Context) {
 func (userController *UserController) FindEmail(ctx *gin.Context) {
 	var EmailInput Models.FindEmailInput
 	if err := ctx.ShouldBindJSON(&EmailInput); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	userByEmail, err := userController.UserService.FindEmail(EmailInput.Email)
@@ -213,7 +209,8 @@ func (userController *UserController) FindEmail(ctx *gin.Context) {
 func (usercontroller *UserController) VerifyOTP(ctx *gin.Context) {
 	var OTPReq Models.OTPReq
 	if err := ctx.ShouldBindJSON(&OTPReq); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	_, err := usercontroller.UserService.VerifyOTP(OTPReq.Email, OTPReq.OTPCode)
@@ -226,7 +223,8 @@ func (usercontroller *UserController) VerifyOTP(ctx *gin.Context) {
 func (usercontroller *UserController) ResendOTP(ctx *gin.Context) {
 	var EmailInput Models.FindEmailInput
 	if err := ctx.ShouldBindJSON(&EmailInput); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	userByEmail, err := usercontroller.UserService.FindEmail(EmailInput.Email)
@@ -252,7 +250,8 @@ func (usercontroller *UserController) ResendOTP(ctx *gin.Context) {
 func (userController *UserController) ForgotPasswordByOTP(ctx *gin.Context) {
 	var ForgotPasswordInput Models.ForgotPasswordInput
 	if err := ctx.ShouldBindJSON(&ForgotPasswordInput); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	if ForgotPasswordInput.ConfirmPassword != ForgotPasswordInput.NewPassword {
