@@ -41,4 +41,3 @@ type TermInput struct {
 	TermFromYear int `json:"term_from_year" binding:"required,gte=1900,lte=2100"`
 	TermToYear   int `json:"term_to_year" binding:"required,gte=1900,lte=2100"`
 }
-G
