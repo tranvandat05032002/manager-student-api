@@ -24,6 +24,7 @@ type UserService interface {
 	SaveOTPForUser(primitive.ObjectID, string) error
 	VerifyOTP(string, string) (bool, error)
 	ResendOTP(primitive.ObjectID, string) (bool, error)
+	Logout(string, primitive.ObjectID) error
 
 	// Student
 	//GetStudentDetails(primitive.ObjectID, primitive.ObjectID) (*Models.StudentDetail, error)

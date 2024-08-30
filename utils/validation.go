@@ -1,13 +1,10 @@
 package utils
 
 import (
-	"fmt"
 	"github.com/go-playground/validator/v10"
 )
 
 func GetCustomErrorMessage(field, tag string) string {
-	fmt.Println("Field --> ", field)
-	fmt.Println("Tag --> ", tag)
 	switch tag {
 	case "required":
 		return field + " không được để trống"

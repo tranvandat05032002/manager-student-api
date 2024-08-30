@@ -11,6 +11,7 @@ import (
 
 func AuthValidationBearerMiddleware(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
+	deviced := c.Request.Header.Get("User-Agent")
 	if authHeader == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})
 		common.NewErrorResponse(c, http.StatusUnauthorized, "Vui lòng truyền token!", "")
@@ -26,6 +27,7 @@ func AuthValidationBearerMiddleware(c *gin.Context) {
 		c.Abort()
 		return
 	}
+	c.Set("deviced", deviced)
 	c.Set("userId", claims["userID"].(string))
 	c.Set("role", claims["role"].(string))
 	c.Next()

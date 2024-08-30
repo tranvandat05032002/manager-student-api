@@ -81,6 +81,12 @@ func (useController *UserController) LoginUser(ctx *gin.Context) {
 	}
 	useController.UserService.LoginUser(&user, ctx)
 }
+func (userController *UserController) Logout(ctx *gin.Context) {
+	userId, _ := ctx.MustGet("userId").(string)
+	deviced, _ := ctx.MustGet("deviced").(string)
+	userController.UserService.Logout(deviced, utils.ConvertStringToObjectId(userId))
+	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, common.SuccessLogout, nil))
+}
 func (userController *UserController) GetMe(ctx *gin.Context) {
 	userId, exists := ctx.Get("userId")
 	role, exists := ctx.Get("role")
@@ -287,6 +293,7 @@ func (userController *UserController) RegisterUserRoutes(rg *gin.RouterGroup) {
 		userroute.Use(Middlewares.AuthValidationBearerMiddleware)
 		{
 			userroute.GET("/me", userController.GetMe)
+			userroute.POST("/logout", userController.Logout)
 			userroute.GET("/:user_id", userController.GetAccount)
 			userroute.PATCH("/me/update", userController.UpdateMe)
 			userroute.PUT("/change-password", userController.ChangePassword)

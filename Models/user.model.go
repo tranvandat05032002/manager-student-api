@@ -30,19 +30,19 @@ type AuthInput struct {
 }
 
 type UserUpdate struct {
-	MajorName      string    `json:"major_name"` // Chưa validate
-	Email          string    `json:"email"`
-	Password       string    `json:"password"`
-	Role           string    `json:"role_type"`
-	Phone          string    `json:"phone"`
-	Name           string    `json:"name"`
-	Avatar         string    `json:"avatar"`
-	Gender         int       `json:"gender"`
-	Department     string    `json:"department"`
-	DateOfBirth    time.Time `json:"date_of_birth"`
-	EnrollmentDate time.Time `json:"enrollment_date"`
-	HireDate       time.Time `json:"hire_date"`
-	Address        string    `json:"address"`
+	MajorName      string    `json:"major_name" bson:"major_name"` // Chưa validate
+	Email          string    `json:"email" bson:"email"`
+	Password       string    `json:"password" bson:"password"`
+	Role           string    `json:"role_type" bson:"role_type"`
+	Phone          string    `json:"phone" bson:"phone"`
+	Name           string    `json:"name" bson:"name"`
+	Avatar         string    `json:"avatar" bson:"avatar"`
+	Gender         int       `json:"gender" bson:"gender"`
+	Department     string    `json:"department" bson:"department"`
+	DateOfBirth    time.Time `json:"date_of_birth" bson:"dateOfBirth"`
+	EnrollmentDate time.Time `json:"enrollment_date" bson:"enrollmentDate"`
+	HireDate       time.Time `json:"hire_date" bson:"hireDate"`
+	Address        string    `json:"address" bson:"address"`
 }
 type CreateUserInput struct {
 	Email    string `json:"email" binding:"required,email"`

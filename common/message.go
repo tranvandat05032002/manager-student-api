@@ -27,4 +27,5 @@ const (
 	SuccessUpdateData     = "Cập nhật thông tin thành công!"
 	SuccessLogin          = "Đăng nhập thành công!"
 	SuccessGetMe          = "Get me thành công!"
+	SuccessLogout         = "Đăng xuất thành công!"
 )

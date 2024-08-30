@@ -102,7 +102,6 @@ func (a *UserImplementService) DeleteOTPExp() {
 	if err != nil {
 		log.Printf("Error deleting expired OTP: %v", err)
 	}
-	fmt.Println("Cleaned expired OTP ----------> at", expiryThreshold)
 }
 func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Context) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
@@ -191,10 +190,10 @@ func (a *UserImplementService) GetMe(userId, role string) (*Models.UserModel, er
 		studentProjection := bson.D{{"password", 0}, {"hire_date", 0}, {"department", 0}}
 		err = a.usercollection.FindOne(a.ctx, query, options.FindOne().SetProjection(studentProjection)).Decode(&account)
 	case "teacher":
-		teacherProjection := bson.D{{"password", 0}, {"address", 0}, {"date_of_birth", 0}, {"major_id", 0}, {"enrollment_date", 0}}
+		teacherProjection := bson.D{{"password", 0}, {"address", 0}, {"major_id", 0}, {"enrollment_date", 0}}
 		err = a.usercollection.FindOne(a.ctx, query, options.FindOne().SetProjection(teacherProjection)).Decode(&account)
 	case "admin":
-		adminProjection := bson.D{{"password", 0}, {"address", 0}, {"date_of_birth", 0}, {"major_id", 0}, {"enrollment_date", 0}, {"hire_date", 0}, {"department", 0}}
+		adminProjection := bson.D{{"password", 0}, {"address", 0}, {"major_id", 0}, {"enrollment_date", 0}, {"hire_date", 0}, {"department", 0}}
 		err = a.usercollection.FindOne(a.ctx, query, options.FindOne().SetProjection(adminProjection)).Decode(&account)
 	default:
 		return nil, errors.New("Invalid role")
@@ -235,6 +234,15 @@ func (a *UserImplementService) GetAll(page, limit int) ([]*Models.UserModel, int
 	}
 	return users, int(total), err
 }
+
+func (a *UserImplementService) Logout(deviced string, userId primitive.ObjectID) error {
+	filter := bson.M{"deviced": deviced, "user_id": userId}
+	_, err := a.tokencollection.DeleteOne(a.ctx, filter)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func (a *UserImplementService) UpdateMe(userId string, userData *Models.UserUpdate) (*Models.UserModel, error) {
 	filter := bson.M{"_id": utils.ConvertStringToObjectId(userId)}
 	updateFields := bson.M{}
@@ -266,7 +274,6 @@ func (a *UserImplementService) UpdateMe(userId string, userData *Models.UserUpda
 	if !userData.EnrollmentDate.IsZero() {
 		updateFields["enrollment_date"] = userData.EnrollmentDate
 	}
-
 	updateFields["updated_at"] = time.Now().UTC()
 	if len(updateFields) > 0 {
 		userDataUpdate := bson.M{"$set": updateFields}
