@@ -1,0 +1,19 @@
+basePath: /v1
+host: localhost:4000
+info:
+  contact: {}
+  description: Manager Student service API in Go using Gin Framework
+  title: Manager Student Service API
+  version: "1.0"
+paths:
+  /user/create:
+    post:
+      consumes:
+      - application/json
+      description: Tạo mới một người dùng
+      produces:
+      - application/json
+      responses: {}
+      tags:
+      - User
+swagger: "2.0"

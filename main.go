@@ -10,17 +10,26 @@ import (
 	"gin-gonic-gom/Services/term"
 	"gin-gonic-gom/Services/user"
 	"gin-gonic-gom/config"
+	_ "gin-gonic-gom/docs"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/lpernett/godotenv"
 	"github.com/robfig/cron/v3"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"os"
 	"time"
 )
 
+// @Title  Manager Student Service API
+// @Version 1.0
+// @description Manager Student service API in Go using Gin Framework
+
+// @Host localhost:4000
+// @BasePath /v1
 var (
 	server       *gin.Engine
 	us           user.UserService
@@ -58,14 +67,15 @@ func InitializeConfig() {
 	server = gin.Default()
 	//config TrustedProxies and IPV6
 	server.SetTrustedProxies([]string{
-		"127.0.0.1",                             // Địa chỉ IPv4 localhost
+		"127.0.0.1", // Địa chỉ IPv4 localhost
+		"0.0.0.0",
 		"192.168.1.10",                          // Địa chỉ IPv4 proxy tin cậy
 		"::1",                                   // Địa chỉ IPv6 localhost
 		"2405:4802:6563:140:10b3:beb9:c910:16e", // Địa chỉ IPv6 proxy tin cậy
 	})
 	//config cors
 	server.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:8080"}, //client
+		AllowOrigins:     []string{"*"}, //client
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"},
 		ExposeHeaders:    []string{"Content-Length", "Content-Disposition"},
@@ -113,6 +123,9 @@ func main() {
 			log.Println("Error disconnecting MongoDB client: ---> ", err)
 		}
 	}(mongoClient, ctx)
+	//Document
+	server.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	//REST API
 	basepath := server.Group("/v1")
 	uc.RegisterUserRoutes(basepath)
 	mc.RegisterMediaRoutes(basepath)

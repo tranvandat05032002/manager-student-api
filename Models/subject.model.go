@@ -18,14 +18,14 @@ type SubjectModel struct {
 }
 
 type SubjectInput struct {
-	SubjectCode  string `json:"subject_code" binding:"required,min=4,max=20"` // Mã học phần
-	SubjectName  string `json:"subject_name" binding:"required,min=2,max=100"`
-	Credits      int    `json:"credits" binding:"required,gt=0"`
+	SubjectCode  string `json:"subject_code"` // Mã học phần
+	SubjectName  string `json:"subject_name"`
+	Credits      int    `json:"credits"`
 	IsMandatory  bool   `json:"is_mandatory"` // Học phần bắt buộc
-	TermSemester int    `json:"term_semester" binding:"required,oneof=1 2 3"`
-	TermFromYear int    `json:"term_from_year" binding:"required,gte=1900,lte=2100"`
-	TermToYear   int    `json:"term_to_year" binding:"required,gte=1900,lte=2100"`
-	Department   string `json:"department" binding:"required,min=2,max=100"` // Khoa
+	TermSemester int    `json:"term_semester"`
+	TermFromYear int    `json:"term_from_year"`
+	TermToYear   int    `json:"term_to_year"`
+	Department   string `json:"department"` // Khoa
 }
 type TermModel struct {
 	ID           primitive.ObjectID `json:"id" bson:"_id"`
@@ -37,7 +37,7 @@ type TermModel struct {
 	UpdatedAt    time.Time          `json:"updated_at" bson:"updated_at"`
 }
 type TermInput struct {
-	TermSemester int `json:"term_semester" binding:"required,oneof=1 2 3"`
-	TermFromYear int `json:"term_from_year" binding:"required,gte=1900,lte=2100"`
-	TermToYear   int `json:"term_to_year" binding:"required,gte=1900,lte=2100"`
+	TermSemester int `json:"term_semester"`
+	TermFromYear int `json:"term_from_year"`
+	TermToYear   int `json:"term_to_year"`
 }

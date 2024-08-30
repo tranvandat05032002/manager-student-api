@@ -21,6 +21,16 @@ func New(userService user.UserService) UserController {
 		UserService: userService,
 	}
 }
+
+// CreateUser godoc
+// @Description Tạo mới một người dùng
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Param createUserInput body Models.CreateUserInput true "Create User Input"
+// @Success 200 {object} common.Response{status=int,message=string,data=interface{}} "Success response"
+// @Failure 400 {object} common.ErrorResponse "Bad Request response"
+// @Router /user/create [post]
 func (userController *UserController) CreateUser(ctx *gin.Context) {
 	var user Models.CreateUserInput
 	if err := ctx.ShouldBindJSON(&user); err != nil {

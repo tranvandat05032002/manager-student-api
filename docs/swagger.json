@@ -1,0 +1,28 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Manager Student service API in Go using Gin Framework",
+        "title": "Manager Student Service API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:4000",
+    "basePath": "/v1",
+    "paths": {
+        "/user/create": {
+            "post": {
+                "description": "Tạo mới một người dùng",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "responses": {}
+            }
+        }
+    }
+}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gin-gonic-gom/Models"
 	"gin-gonic-gom/common"
+	"gin-gonic-gom/constant"
 	"gin-gonic-gom/helper"
 	"gin-gonic-gom/utils"
 	"github.com/gin-gonic/gin"
@@ -241,7 +242,7 @@ func (a *UserImplementService) UpdateMe(userId string, userData *Models.UserUpda
 	if userData.Name != "" {
 		updateFields["name"] = userData.Name
 	}
-	if userData.Gender {
+	if userData.Gender != constant.SEX_OTHER || userData.Gender != constant.SEX_MALE || userData.Gender != constant.SEX_FEMALE {
 		updateFields["gender"] = userData.Gender
 	}
 	if userData.Avatar != "" {
@@ -300,7 +301,7 @@ func (a *UserImplementService) UpdateUser(account *Models.AccountUpdate, id prim
 	if account.Name != "" {
 		updateFields["name"] = account.Name
 	}
-	if account.Gender {
+	if account.Gender != constant.SEX_OTHER || account.Gender != constant.SEX_MALE || account.Gender != constant.SEX_FEMALE {
 		updateFields["gender"] = account.Gender
 	}
 	if account.Email != "" {

@@ -14,7 +14,7 @@ type UserModel struct {
 	Phone          string              `json:"phone" bson:"phone" binding:"required,len=10""`
 	Name           string              `json:"name" bson:"name" binding:"required,min=2,max=100"`
 	Avatar         string              `json:"avatar" bson:"avatar" binding:"required,url"`
-	Gender         *bool               `json:"gender" bson:"gender"`
+	Gender         *int                `json:"gender" bson:"gender"`
 	Department     string              `json:"department" bson:"department"`
 	DateOfBirth    time.Time           `json:"date_of_birth" bson:"date_of_birth"`
 	EnrollmentDate time.Time           `json:"enrollment_date" bson:"enrollment_date"`
@@ -31,13 +31,13 @@ type AuthInput struct {
 
 type UserUpdate struct {
 	MajorName      string    `json:"major_name"` // Chưa validate
-	Email          string    `json:"email" binding:"required,email"`
-	Password       string    `json:"password" binding:"required,min=6,max=30"`
-	Role           string    `json:"role_type" binding:"required,eq=student|eq=teacher|eq=admin"`
-	Phone          string    `json:"phone" binding:"required,len=10""`
-	Name           string    `json:"name" binding:"required,min=2,max=100"`
-	Avatar         string    `json:"avatar" binding:"required,url"`
-	Gender         bool      `json:"gender"`
+	Email          string    `json:"email"`
+	Password       string    `json:"password"`
+	Role           string    `json:"role_type"`
+	Phone          string    `json:"phone"`
+	Name           string    `json:"name"`
+	Avatar         string    `json:"avatar"`
+	Gender         int       `json:"gender"`
 	Department     string    `json:"department"`
 	DateOfBirth    time.Time `json:"date_of_birth"`
 	EnrollmentDate time.Time `json:"enrollment_date"`

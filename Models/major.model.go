@@ -13,6 +13,6 @@ type MajorModel struct {
 	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
 }
 type MajorUpdateReq struct {
-	MajorId   string `json:"major_id" bson:"major_id" binding:"required,min=4,max=20"`
-	MajorName string `json:"major_name" bson:"major_name" binding:"required,min=2,max=100"`
+	MajorId   string `json:"major_id" bson:"-"`
+	MajorName string `json:"major_name" bson:"-"`
 }

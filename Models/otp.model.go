@@ -14,8 +14,8 @@ type OTPModel struct {
 	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
 }
 type OTPReq struct {
-	Email   string `json:"email" bson:"email" binding:"required,email"`
-	OTPCode string `json:"otp_code" bson:"otp_code" binding:"required,len=6"`
+	Email   string `json:"email" bson:"-"`
+	OTPCode string `json:"otp_code" bson:"-"`
 }
 type OTPRes struct {
 	OTPCode   string    `json:"otp_code" bson:"otp_code"`
