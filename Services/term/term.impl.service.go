@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gin-gonic-gom/Models"
 	"gin-gonic-gom/utils"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -66,15 +67,9 @@ func (a *TermImplementService) CreateTerm(termInput Models.TermInput) error {
 	}
 	return nil
 }
-func (a *TermImplementService) GetTermDetails(termInput Models.TermInput) (Models.TermModel, error) {
+func (a *TermImplementService) GetTermDetails(id primitive.ObjectID) (Models.TermModel, error) {
 	var term Models.TermModel
-	query := bson.M{
-		"$and": []bson.M{
-			{"term_semester": termInput.TermSemester},
-			{"term_from_year": termInput.TermFromYear},
-			{"term_to_year": termInput.TermToYear},
-		},
-	}
+	query := bson.M{"_id": id}
 	err := a.termcollection.FindOne(a.ctx, query).Decode(&term)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
