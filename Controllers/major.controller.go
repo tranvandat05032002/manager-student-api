@@ -7,9 +7,10 @@ import (
 	"gin-gonic-gom/Services/major"
 	"gin-gonic-gom/common"
 	"gin-gonic-gom/utils"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type MajorController struct {
@@ -94,6 +95,22 @@ func (majorController *MajorController) GetMajorDetailsController(ctx *gin.Conte
 		common.SimpleSuccessResponse(http.StatusOK, "Lấy thông tin ngành thành công!", major),
 	)
 }
+func (majorController *MajorController) SearchMajorController(ctx *gin.Context) {
+	majorNameQuery := ctx.Query("major_name")
+	limitStr := ctx.Query("limit")
+	pageStr := ctx.Query("page")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 5
+	}
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page <= 0 {
+		page = 1
+	}
+	nameMajor := string(majorNameQuery)
+	majors, total, _ := majorController.MajorService.SearchMajor(nameMajor, page, limit)
+	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Tìm kiếm ngành thành công!!", majors, total, page, limit))
+}
 func (majorController *MajorController) RegisterMajorRoutes(rg *gin.RouterGroup) {
 	majorroute := rg.Group("/major") // Client
 	{
@@ -109,6 +126,7 @@ func (majorController *MajorController) RegisterMajorRoutes(rg *gin.RouterGroup)
 		majoradminroute.Use(Middlewares.RoleMiddleware("admin"))
 		{
 			majoradminroute.POST("/add", majorController.CreateMajorController)
+			majoradminroute.GET("/search", majorController.SearchMajorController)
 			majoradminroute.DELETE("/:id", majorController.DeleteMajorController)
 			majoradminroute.PATCH("/:id", majorController.UpdateMajorController)
 		}

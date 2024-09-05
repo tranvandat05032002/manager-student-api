@@ -1,11 +1,14 @@
 package utils
 
 import (
+	"context"
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func ConvertDurationToTimeUTC(timeDuration time.Duration) time.Time {
@@ -108,4 +111,23 @@ func ConvertISOToDate(isoString string) (string, error) {
 
 	formattedDate := parsedDate.Format("02-01-2006")
 	return formattedDate, nil
+}
+
+func CheckIndexExists(ctx context.Context, collection *mongo.Collection, indexName string) (bool, error) {
+    indexes, err := collection.Indexes().List(ctx)
+    if err != nil {
+        return false, err
+    }
+    defer indexes.Close(ctx)
+
+    for indexes.Next(ctx) {
+        var index bson.M
+        if err := indexes.Decode(&index); err != nil {
+            return false, err
+        }
+        if name, ok := index["name"].(string); ok && name == indexName {
+            return true, nil
+        }
+    }
+    return false, nil
 }

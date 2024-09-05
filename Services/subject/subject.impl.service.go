@@ -139,3 +139,24 @@ func (a *SubjectImplementService) GetSubjectDetails(id primitive.ObjectID) (*Mod
 	}
 	return subject, err
 }
+
+func (a *SubjectImplementService) SearchSubject(subjectName string, page, limit int) ([] Models.SubjectModel, int, error) {
+	skip := (page - 1) * limit
+	totalCount, err := a.subjectcollection.CountDocuments(a.ctx, bson.D{{"$text", bson.D{{"$search",  subjectName}}}})
+	pipeline := bson.A{
+		bson.D{{"$match", bson.D{{"$text", bson.D{{"$search", subjectName}}}}}},
+		bson.D{{"$skip", skip}},
+		bson.D{{"$limit", limit}},
+	}
+	var subjectRes []Models.SubjectModel
+	cursor, err := a.subjectcollection.Aggregate(a.ctx, pipeline)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(a.ctx)
+	if err = cursor.All(a.ctx, &subjectRes); err != nil {
+		return nil, 0, err
+	}
+	return subjectRes, int(totalCount), nil
+
+}

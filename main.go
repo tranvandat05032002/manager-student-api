@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"gin-gonic-gom/Controllers"
 	"gin-gonic-gom/Services/major"
 	"gin-gonic-gom/Services/media"
@@ -11,6 +12,7 @@ import (
 	"gin-gonic-gom/Services/user"
 	"gin-gonic-gom/config"
 	_ "gin-gonic-gom/docs"
+	"gin-gonic-gom/utils"
 	"log"
 	"os"
 	"time"
@@ -24,6 +26,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // @Title  Manager Student Service API
@@ -57,7 +60,14 @@ var (
 	mongoClient  *mongo.Client
 	validate     *validator.Validate
 )
-
+func createIndex(collection *mongo.Collection, indexName string, indexType interface{}) mongo.IndexModel {
+	if(indexType == "text") {
+		indexModelText := mongo.IndexModel{Keys: bson.D{{indexName, indexType}}, Options: options.Index().SetDefaultLanguage("none")}	
+		return indexModelText
+	}
+	indexModelNotText := mongo.IndexModel{Keys: bson.D{{indexName, indexType}}}
+	return indexModelNotText
+}
 func InitializeConfig() {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -93,8 +103,17 @@ func InitializeDatabase() {
 	mongoCon, _ := config.Connect(ctx)
 	// Users collection
 	userco = mongoCon.Collection("Users")
-	userIndexModel := mongo.IndexModel{Keys: bson.D{{"name", "text"}}}
-	userco.Indexes().CreateOne(context.TODO(), userIndexModel)
+	index_name_user := "name_text"
+	indexUserExists, errIndex := utils.CheckIndexExists(ctx, userco, index_name_user)
+	if errIndex != nil {
+		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
+	}
+	if !indexUserExists {
+        indexUserModel := createIndex(userco, "name", "text")
+		userco.Indexes().CreateOne(context.TODO(), indexUserModel)
+    } else {
+        fmt.Println("Index already exists:", index_name_user)
+    }
 	// Token collection
 	tokenco = mongoCon.Collection("Tokens")
 	// OTP collection
@@ -103,10 +122,30 @@ func InitializeDatabase() {
 	mediaco = mongoCon.Collection("Medias")
 	// Major collection
 	majorco = mongoCon.Collection("Majors")
-	majorIndexModel := mongo.IndexModel{Keys: bson.D{{"major_name", "text"}}}
-	majorco.Indexes().CreateOne(context.TODO(), majorIndexModel)
+	indexMajorName := "major_name_text"
+	indexMajorExists, errIndex := utils.CheckIndexExists(ctx, majorco, indexMajorName)
+	if errIndex != nil {
+		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
+	}
+	if !indexMajorExists {
+        indexMajorModel := createIndex(majorco, "major_name", "text")
+		majorco.Indexes().CreateOne(context.TODO(), indexMajorModel)
+    } else {
+        fmt.Println("Index already exists:", indexMajorName)
+    }
 	// Subject collection
 	subjectco = mongoCon.Collection("Subjects")
+	indexSubjectName := "subject_name_text"
+	indexSubjectExists, errIndex := utils.CheckIndexExists(ctx, subjectco, indexSubjectName)
+	if errIndex != nil {
+		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
+	}
+	if !indexSubjectExists {
+        indexSubjectModel := createIndex(subjectco, "subject_name", "text")
+		subjectco.Indexes().CreateOne(context.TODO(), indexSubjectModel)
+    } else {
+        fmt.Println("Index already exists:", indexSubjectName)
+    }
 	// Term collection
 	termco = mongoCon.Collection("Terms")
 

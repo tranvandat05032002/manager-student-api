@@ -6,9 +6,10 @@ import (
 	"gin-gonic-gom/Services/subject"
 	"gin-gonic-gom/common"
 	"gin-gonic-gom/utils"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type SubjectController struct {
@@ -94,6 +95,22 @@ func (subjectController *SubjectController) GetSubjectDetailsController(ctx *gin
 		common.SimpleSuccessResponse(http.StatusOK, "Lấy thông tin môn học thành công!", subject),
 	)
 }
+func (subjectController *SubjectController) SearchSubjectController(ctx *gin.Context) {
+	subjectNameQuery := ctx.Query("subject_name")
+	limitStr := ctx.Query("limit")
+	pageStr := ctx.Query("page")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 5
+	}
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page <= 0 {
+		page = 1
+	}
+	nameSubject := string(subjectNameQuery)
+	subjects, total, _ := subjectController.SubjectService.SearchSubject(nameSubject, page, limit)
+	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Tìm kiếm môn học thành công!!", subjects, total, page, limit))
+}
 func (subjectController *SubjectController) RegisterSubjectRoutes(rg *gin.RouterGroup) {
 	subjectroute := rg.Group("/subject")
 	{
@@ -109,6 +126,7 @@ func (subjectController *SubjectController) RegisterSubjectRoutes(rg *gin.Router
 		subjectadminroute.Use(Middlewares.RoleMiddleware("admin"))
 		{
 			subjectadminroute.POST("/add", subjectController.CreateSubjectController)
+			subjectadminroute.GET("/search", subjectController.SearchSubjectController)
 			subjectadminroute.DELETE("/:id", subjectController.DeleteSubjectController)
 			subjectadminroute.PATCH("/:id", subjectController.UpdateSubjectController)
 		}

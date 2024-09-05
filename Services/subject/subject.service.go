@@ -2,6 +2,7 @@ package subject
 
 import (
 	"gin-gonic-gom/Models"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -11,4 +12,5 @@ type SubjectService interface {
 	UpdateSubject(primitive.ObjectID, Models.SubjectInput) (Models.SubjectModel, error)
 	GetAllSubject(int, int) ([]Models.SubjectModel, int, error)
 	DeleteSubject(primitive.ObjectID) (int, error)
+	SearchSubject(string, int, int) ([]Models.SubjectModel, int, error)
 }

@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"gin-gonic-gom/Models"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"time"
 )
 
 type MajorImplementService struct {
@@ -117,4 +118,24 @@ func (a *MajorImplementService) GetMajorDetails(id primitive.ObjectID) (*Models.
 	query := bson.M{"_id": id}
 	err := a.majorcollection.FindOne(a.ctx, query).Decode(&major)
 	return major, err
+}
+func (a *MajorImplementService) SearchMajor(majorName string, page, limit int) ([] Models.MajorModel, int, error) {
+	skip := (page - 1) * limit
+	totalCount, err := a.majorcollection.CountDocuments(a.ctx, bson.D{{"$text", bson.D{{"$search",  majorName}}}})
+	pipeline := bson.A{
+		bson.D{{"$match", bson.D{{"$text", bson.D{{"$search", majorName}}}}}},
+		bson.D{{"$skip", skip}},
+		bson.D{{"$limit", limit}},
+	}
+	var majorRes []Models.MajorModel
+	cursor, err := a.majorcollection.Aggregate(a.ctx, pipeline)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(a.ctx)
+	if err = cursor.All(a.ctx, &majorRes); err != nil {
+		return nil, 0, err
+	}
+	return majorRes, int(totalCount), nil
+
 }
