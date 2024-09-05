@@ -6,9 +6,10 @@ import (
 	"gin-gonic-gom/Services/term"
 	"gin-gonic-gom/common"
 	"gin-gonic-gom/utils"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type TermController struct {
@@ -83,19 +84,15 @@ func (termController *TermController) DeleteTermController(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "Xóa học kỳ thành công", nil))
 }
 func (termController *TermController) GetTermDetailsController(ctx *gin.Context) {
-	var termInput Models.TermInput
-	if err := ctx.ShouldBindJSON(&termInput); err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
-		return
-	}
-	term, err := termController.TermService.GetTermDetails(termInput)
+	termId := ctx.Param("id")
+	term, err := termController.TermService.GetTermDetails(utils.ConvertStringToObjectId(termId))
 	if err != nil {
 		common.NewErrorResponse(ctx, http.StatusBadRequest, "Học kỳ không tồn tại!", err.Error())
 		return
 	}
 	ctx.JSON(
 		http.StatusOK,
-		common.SimpleSuccessResponse(http.StatusOK, "Lấy thông tin môn học thành công!", term),
+		common.SimpleSuccessResponse(http.StatusOK, "Lấy thông tin học kỳ thành công!", term),
 	)
 }
 func (termController *TermController) RegisterTermRoutes(rg *gin.RouterGroup) {
@@ -104,7 +101,7 @@ func (termController *TermController) RegisterTermRoutes(rg *gin.RouterGroup) {
 		termroute.Use(Middlewares.AuthValidationBearerMiddleware)
 		{
 			termroute.GET("/all", termController.GetAllTermController)
-			termroute.GET("/details", termController.GetTermDetailsController)
+			termroute.GET("/details/:id", termController.GetTermDetailsController)
 		}
 	}
 	termadminroute := rg.Group("/admin/term")

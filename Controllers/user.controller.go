@@ -7,9 +7,10 @@ import (
 	"gin-gonic-gom/Services/user"
 	"gin-gonic-gom/common"
 	"gin-gonic-gom/utils"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserController struct {
