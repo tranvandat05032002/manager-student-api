@@ -282,6 +282,22 @@ func (userController *UserController) ForgotPasswordByOTP(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "Reset Password Success!!", ForgotPasswordInput))
 }
+func (userController *UserController) SearchUser(ctx *gin.Context) {
+	nameQuery := ctx.Query("name")
+	limitStr := ctx.Query("limit")
+	pageStr := ctx.Query("page")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 5
+	}
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page <= 0 {
+		page = 1
+	}
+	name := string(nameQuery)
+	users, total, _ := userController.UserService.SearchUser(name, page, limit)
+	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Tìm kiếm user thành công!!", users, total, page, limit))
+}
 func (userController *UserController) RegisterUserRoutes(rg *gin.RouterGroup) {
 	userroute := rg.Group("/user") // Client
 	{
@@ -306,6 +322,7 @@ func (userController *UserController) RegisterUserRoutes(rg *gin.RouterGroup) {
 	adminroute.Use(Middlewares.RoleMiddleware("admin"))
 	{
 		adminroute.GET("/all", userController.GetAll)
+		adminroute.GET("/user/search", userController.SearchUser)
 		adminroute.PATCH("/update/:id", userController.UpdateUser)
 		adminroute.DELETE("/delete/:user_id", userController.DeleteUser)
 	}

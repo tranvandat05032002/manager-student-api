@@ -11,6 +11,10 @@ import (
 	"gin-gonic-gom/Services/user"
 	"gin-gonic-gom/config"
 	_ "gin-gonic-gom/docs"
+	"log"
+	"os"
+	"time"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -18,10 +22,8 @@ import (
 	"github.com/robfig/cron/v3"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"log"
-	"os"
-	"time"
 )
 
 // @Title  Manager Student Service API
@@ -89,12 +91,23 @@ func InitializeConfig() {
 func InitializeDatabase() {
 	ctx = context.TODO()
 	mongoCon, _ := config.Connect(ctx)
+	// Users collection
 	userco = mongoCon.Collection("Users")
+	userIndexModel := mongo.IndexModel{Keys: bson.D{{"name", "text"}}}
+	userco.Indexes().CreateOne(context.TODO(), userIndexModel)
+	// Token collection
 	tokenco = mongoCon.Collection("Tokens")
+	// OTP collection
 	otpco = mongoCon.Collection("OTPs")
+	//Media collection
 	mediaco = mongoCon.Collection("Medias")
+	// Major collection
 	majorco = mongoCon.Collection("Majors")
+	majorIndexModel := mongo.IndexModel{Keys: bson.D{{"major_name", "text"}}}
+	majorco.Indexes().CreateOne(context.TODO(), majorIndexModel)
+	// Subject collection
 	subjectco = mongoCon.Collection("Subjects")
+	// Term collection
 	termco = mongoCon.Collection("Terms")
 
 	us = user.NewUserService(userco, majorco, tokenco, otpco, ctx)

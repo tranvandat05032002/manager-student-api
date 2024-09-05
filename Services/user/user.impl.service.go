@@ -9,15 +9,16 @@ import (
 	"gin-gonic-gom/constant"
 	"gin-gonic-gom/helper"
 	"gin-gonic-gom/utils"
+	"log"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
-	"net/http"
-	"os"
-	"time"
 )
 
 type UserImplementService struct {
@@ -510,4 +511,25 @@ func (a *UserImplementService) ForgotPasswordByOTP(forgotPasswordInput *Models.F
 		return false, errors.New("Lỗi khi xóa OTP!")
 	}
 	return true, nil
+}
+
+func (a *UserImplementService) SearchUser(name string, page, limit int) ([] Models.UserModel, int, error) {
+	skip := (page - 1) * limit
+	totalCount, err := a.usercollection.CountDocuments(a.ctx, bson.D{{"$text", bson.D{{"$search", name}}}})
+	pipeline := bson.A{
+		bson.D{{"$match", bson.D{{"$text", bson.D{{"$search", name}}}}}},
+		bson.D{{"$skip", skip}},
+		bson.D{{"$limit", limit}},
+	}
+	var userRes []Models.UserModel
+	cursor, err := a.usercollection.Aggregate(a.ctx, pipeline)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(a.ctx)
+	if err = cursor.All(a.ctx, &userRes); err != nil {
+		return nil, 0, err
+	}
+	return userRes, int(totalCount), nil
+
 }

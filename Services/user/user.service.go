@@ -2,6 +2,7 @@ package user
 
 import (
 	"gin-gonic-gom/Models"
+
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -25,6 +26,7 @@ type UserService interface {
 	VerifyOTP(string, string) (bool, error)
 	ResendOTP(primitive.ObjectID, string) (bool, error)
 	Logout(string, primitive.ObjectID) error
+	SearchUser(string, int, int) ([]Models.UserModel, int, error)
 
 	// Student
 	//GetStudentDetails(primitive.ObjectID, primitive.ObjectID) (*Models.StudentDetail, error)
