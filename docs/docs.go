@@ -17,7 +17,27 @@ const docTemplate = `{
     "tags": [
         {
             "name": "Users",
-            "description": "Quản lý Tài Khoản"
+            "description": "Quản lý tài khoản"
+        },
+        {
+            "name": "Upload",
+            "description": "Quản lý upload file"
+        },
+        {
+            "name": "Major",
+            "description": "Quản lý ngành học"
+        },
+        {
+            "name": "Subject",
+            "description": "Quản lý môn học"
+        },
+        {
+            "name": "Term",
+            "description": "Quản lý học kỳ"
+        },
+        {
+            "name": "Statistical",
+            "description": "Quản lý thống kê"
         }
     ],
     "paths": {
@@ -287,6 +307,1506 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/user/change-password":  {
+            "put": {
+                "tags": ["Users"],
+                "description": "Thay đổi mật khẩu",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Thay đổi mật khẩu",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "body",
+                        "description": "Thông tin cập nhật",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "older_password": {
+                                    "type": "string",
+                                    "example": "123456"
+                                },
+                                "new_password": {
+                                    "type": "string",
+                                    "example": "35701537scss"
+                                },
+                                "confirm_new_password": {
+                                    "type": "string",
+                                    "example": "35701537scss"
+                                },
+                             
+                            },
+                            "required": ["older_password", "new_password", "confirm_new_password"]
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                     }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thay đổi mật khẩu thành công",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "number",
+                                    "example": 200
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "Thay đổi mật khẩu thành công"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            }
+        },
+        "/user/find-email":  {
+            "post": {
+                "tags": ["Users"],
+                "description": "Tìm user theo email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Tìm user theo email",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "body",
+                        "description": "Email tìm kiếm",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "example": "tranvandatevondev0503@gmail.com"
+                                },
+                             
+                            },
+                            "required": ["email"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tìm thấy user",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "number",
+                                    "example": 200
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "tìm thấy user theo email thành công"
+                                },
+                                "data": {
+                                    "type": "string",
+                                    "example": "850967"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            }
+        },
+        "/user/forgot-password": {
+            "post": {
+                "tags": ["Users"],
+                "description": "Quên mật khẩu",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Đặt lại mật khẩu",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "body",
+                        "description": "Đặt lại mật khẩu",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "example": "tranvandatevondev0503@gmail.com"
+                                },
+                                "otp_token": {
+                                    "type": "string",
+                                    "example": "$2a$14$HwQGNJhcQXkMZAcKN9tyEuEjUuE0u1hK2DVO2LwSccQTw.M6VvJOO"
+                                },
+                                "new_password": {
+                                    "type": "string",
+                                    "example": "1234567"
+                                },
+                                "confirm_password": {
+                                    "type": "string",
+                                    "example": "1234567"
+                                }
+                            },
+                            "required": ["email", "otp_token", "new_password", "confirm_password"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đặt lại mật khẩu thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/user/otp/verify-otp": {
+            "post": {
+                "tags": ["Users"],
+                "description": "Xác thực OTP",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Xác thực OTP",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "body",
+                        "description": "Xác thực OTP",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "example": "tranvandatevondev0503@gmail.com"
+                                },
+                                "otp_code": {
+                                    "type": "string",
+                                    "example": "760776"
+                                }
+                            },
+                            "required": ["email", "otp_code"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xác thực OTP thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/user/otp/resend-otp": {
+            "post": {
+                "tags": ["Users"],
+                "description": "Gửi lại OTP",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Gửi lại OTP",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "body",
+                        "description": "Yêu cầu gửi lại OTP",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "example": "tranvandatevondev0503@gmail.com"
+                                }
+                            },
+                            "required": ["email"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Yêu cầu gửi lại OTP thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/user/logout": {
+            "post": {
+                "tags": ["Users"],
+                "description": "Đăng xuất tài khoản",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Đăng xuất tài khoản",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đăng xuất thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/all": {
+            "get": {
+                "tags": ["Users"],
+                "description": "Lấy danh sách người dùng",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Lấy danh sách người dùng",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Số trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 1
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Số lượng người dùng trên mỗi trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 10
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lấy danh sách người dùng thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/user/search": {
+            "get": {
+                "tags": ["Users"],
+                "description": "Tìm kiếm người dùng",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Lấy danh sách người dùng",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    },
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "description": "tìm kiếm theo name",
+                        "required": false,
+                        "type": "string",
+                        "example": "Trần Văn Đạt"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Số trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 1
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Số lượng người dùng trên mỗi trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 10
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tìm kiếm người dùng thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/delete/{user_id}": {
+            "delete": {
+                "tags": ["Users"],
+                "description": "Xóa người dùng",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Xóa người dùng",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    },
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "description": "Id của người dùng",
+                        "required": true,
+                        "type": "string",
+                        "example": "66bf2256a8938a700515f492"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xóa người dùng thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/update/{id}":  {
+            "patch": {
+                "tags": ["Users"],
+                "description": "Cập nhật thông tin người dùng",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Cập nhật thông tin người dùng",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của người dùng muốn cập nhật",
+                        "required": true,
+                        "type": "string",
+                        "example": "66cd81465b8b221ccc73f6fb"
+                    },
+                    {
+                        "name": "user",
+                        "in": "body",
+                        "description": "Thông tin cập nhật",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AdminUserUpdate"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                     }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật thông tin thành công",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "number",
+                                    "example": 200
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "Cập nhật thông tin thành công"
+                                },
+                                "data": {
+                                    "$ref": "#/definitions/GetMeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            }
+        },
+        "/upload/image": {
+            "post": {
+                "tags": ["Upload"],
+                "description": "Tải hình ảnh",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Tải hình ảnh",
+                "parameters": [
+                    {
+                        "name": "file",
+                        "in": "formData",
+                        "description": "Tệp hình ảnh cần upload",
+                        "required": true,
+                        "type": "file",
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upload thành công",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "integer",
+                                    "example": 200
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "Upload success!"
+                                },
+                                "data": {
+                                    "type": "string",
+                                    "example": "http://localhost:4000/static/images/81e953a3-38a9-4783-9a3c-249567011e6d.jpeg"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+         "/admin/major/add":  {
+            "post": {
+                "tags": ["Major"],
+                "description": "Tạo mới một ngành",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Thêm mới một ngành",
+                "parameters": [
+                    {
+                        "name": "major",
+                        "in": "body",
+                        "description": "Thông tin để tạo một major",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MajorRequest"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tạo mới ngành thành công",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "number",
+                                    "example": 200
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "Tạo mới ngành thành công"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            }
+        },
+        "/admin/major/all": {
+            "get": {
+                "tags": ["Major"],
+                "description": "Lấy danh sách ngành",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Lấy danh sách ngành",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Số trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 1
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Số lượng ngành trên mỗi trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 10
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lấy danh sách ngành thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/major/{id}":  {
+            "patch": {
+                "tags": ["Major"],
+                "description": "Cập nhật một ngành",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Cập nhật một ngành",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của một ngành",
+                        "required": true,
+                        "type": "string",
+                        "example": "66c8628397d36bd575f33035"
+                    },
+                    {
+                        "name": "major",
+                        "in": "body",
+                        "description": "Thông tin cập nhật một ngành",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MajorRequest"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật ngành thành công",
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Major"],
+                "description": "Xóa ngành",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Xóa ngành",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Id của ngành",
+                        "required": true,
+                        "type": "string",
+                        "example": "66d81be1b116440ac169f2f7"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xóa ngành thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/major/details/{id}":  {
+            "get": {
+                "tags": ["Major"],
+                "description": "Lấy thông tin ngành theo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Lấy thông tin ngành theo ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "example": "66d81be1b116440ac169f2f7",
+                        "description": "ID của ngành"
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                     }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lấy thông tin của ngành thành công",
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            }
+        },
+        "/admin/major/search": {
+            "get": {
+                "tags": ["Major"],
+                "description": "Tìm kiếm ngành theo tên ngành",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Tìm kiếm ngành theo tên ngành",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    },
+                    {
+                        "name": "major_name",
+                        "in": "query",
+                        "description": "tìm kiếm theo tên ngành",
+                        "required": false,
+                        "type": "string",
+                        "example": "Công"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "số trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 1
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Số lượng ngành trên mỗi trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 10
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tìm kiếm ngành thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/subject/add":  {
+            "post": {
+                "tags": ["Subject"],
+                "description": "Tạo mới một môn học",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Thêm mới một môn học",
+                "parameters": [
+                    {
+                        "name": "subject",
+                        "in": "body",
+                        "description": "Thông tin để tạo một môn học",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SubjectRequest"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tạo mới môn học thành công",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "number",
+                                    "example": 200
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "Tạo mới môn học thành công"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            }
+        },
+        "/admin/subject/all": {
+            "get": {
+                "tags": ["Subject"],
+                "description": "Lấy danh sách môn học",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Lấy danh sách môn học",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Số trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 1
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Số lượng môn học trên mỗi trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 10
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lấy danh sách môn học thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/subject/{id}":  {
+            "patch": {
+                "tags": ["Subject"],
+                "description": "Cập nhật một môn học",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Cập nhật một môn học",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của một môn học",
+                        "required": true,
+                        "type": "string",
+                        "example": "66c8628397d36bd575f33035"
+                    },
+                    {
+                        "name": "subject",
+                        "in": "body",
+                        "description": "Thông tin cập nhật một môn học",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SubjectRequest"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật môn học thành công",
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Subject"],
+                "description": "Xóa môn học",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Xóa môn học",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Id của môn học",
+                        "required": true,
+                        "type": "string",
+                        "example": "66cd997f3a09b0bbc533d8cf"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xóa môn học thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/subject/details/{id}":  {
+            "get": {
+                "tags": ["Subject"],
+                "description": "Lấy thông tin môn học theo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Lấy thông tin môn học theo ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "example": "66cd997f3a09b0bbc533d8cf",
+                        "description": "ID của môn học"
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                     }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lấy thông tin của môn học thành công",
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            }
+        },
+        "/admin/subject/search": {
+            "get": {
+                "tags": ["Subject"],
+                "description": "Tìm kiếm môn học theo tên môn học",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Tìm kiếm môn học theo tên môn học",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    },
+                    {
+                        "name": "subject_name",
+                        "in": "query",
+                        "description": "tìm kiếm theo tên môn học",
+                        "required": false,
+                        "type": "string",
+                        "example": "Lập Trình Java"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "số trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 1
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Số lượng môn học trên mỗi trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 10
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tìm kiếm môn học thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/term/add":  {
+            "post": {
+                "tags": ["Term"],
+                "description": "Tạo mới một học kỳ",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Thêm mới một học kỳ",
+                "parameters": [
+                    {
+                        "name": "subject",
+                        "in": "body",
+                        "description": "Thông tin để tạo một học kỳ",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TermRequest"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tạo mới học kỳ thành công",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "number",
+                                    "example": 200
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "example": "Tạo mới học kỳ thành công"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            }
+        },
+        "/admin/term/all": {
+            "get": {
+                "tags": ["Term"],
+                "description": "Lấy danh sách học kỳ",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Lấy danh sách học kỳ",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Số trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 1
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Số lượng học kỳ trên mỗi trang",
+                        "required": false,
+                        "type": "interger",
+                        "example": 10
+                    },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lấy danh sách học kỳ thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/term/{id}":  {
+            "patch": {
+                "tags": ["Term"],
+                "description": "Cập nhật một học kỳ",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Cập nhật một học kỳ",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID của một học kỳ",
+                        "required": true,
+                        "type": "string",
+                        "example": "66d9eb313205c8a53f3cb7ca"
+                    },
+                    {
+                        "name": "subject",
+                        "in": "body",
+                        "description": "Thông tin cập nhật một học kỳ",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TermRequest"
+                        }
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cập nhật học kỳ thành công",
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Term"],
+                "description": "Xóa một học kỳ",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Xóa một học kỳ",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Id của học kỳ",
+                        "required": true,
+                        "type": "string",
+                        "example": "66cd997f3a09b0bbc533d8cf"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Xóa học kỳ thành công"
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống",
+                    }
+                }
+            }
+        },
+        "/admin/term/details/{id}":  {
+            "get": {
+                "tags": ["Term"],
+                "description": "Lấy thông tin học kỳ theo ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Lấy thông tin học kỳ theo ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "example": "66d9eb313205c8a53f3cb7ca",
+                        "description": "ID của học kỳ"
+                    },
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Bearer access token",
+                        "required": true,
+                        "type": "string",
+                        "example": "Bearer <your-access-token>"
+                     }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lấy thông tin của học kỳ thành công",
+                    },
+                    "400": {
+                        "description": "Lỗi dữ liệu đầu vào"
+                    },
+                    "404": {
+                        "description": "Đã xảy ra trong quá trình chuyển đổi dữ liệu",
+                    },
+                    "500": {
+                        "description": "Lỗi phía hệ thống"
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -355,11 +1875,11 @@ const docTemplate = `{
             "properties": {
                 "email": {
                     "type": "string",
-                    "example": "tranvandatevondev0503@gmail.com"
+                    "example": "admin@meteor.com"
                 },
                 "password": {
                     "type": "string",
-                    "example": "password123"
+                    "example": "12345678"
                 }
             },
             "required": ["email", "password"]
@@ -443,10 +1963,6 @@ const docTemplate = `{
         "UserUpdate": {
             "type": "object",
             "properties": {
-                "major_name": {
-                    "type": "string",
-                    "example": "Computer Science"
-                },
                 "email": {
                     "type": "string",
                     "example": "admin@meteor.com"
@@ -501,6 +2017,130 @@ const docTemplate = `{
                 "date_of_birth",
                 "address"
             ]
+        },
+        "AdminUserUpdate": {
+            "type": "object",
+            "properties": {
+                "major_id": {
+                    "type": "string",
+                    "example": "66d81beeb116440ac169f2f8"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "tranvandatevondev0503@gmail.com"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "0768523123"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Admin"
+                },
+                "avatar": {
+                    "type": "string",
+                    "format": "uri",
+                    "example": "https://images2.thanhnien.vn/528068263637045248/2024/1/25/c3c8177f2e6142e8c4885dbff89eb92a-65a11aeea03da880-1706156293184503262817.jpg"
+                },
+                "gender": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "department": {
+                    "type": "string",
+                    "example": "Engineering"
+                },
+                "date_of_birth": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-08-30T19:13:03.972Z"
+                },
+                "enrollment_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-08-30T19:13:03.972Z"
+                },
+                "hire_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-08-30T19:13:03.972Z"
+                },
+                "address": {
+                    "type": "string",
+                    "example": "Lê Lợi"
+                }
+            },
+            "required": [
+                "email",
+                "role_type",
+                "name",
+                "avatar",
+                "gender",
+                "date_of_birth",
+                "address"
+            ]
+        },
+        "MajorRequest": {
+            "type": "object",
+            "properties": {
+                "major_id": {
+                    "type": "string",
+                    "example": "CNPM"
+                },
+                "major_name": {
+                    "type": "string",
+                    "example": "Công nghệ phần mềm"
+                }
+            },
+            "required": ["major_id", "major_name"]
+        },
+        "SubjectRequest": {
+            "type": "object",
+            "properties": {
+                "term_id": {
+                    "type": "string",
+                    "example": "66d18631cae5906ce4f4df9d"
+                },
+                "subject_code": {
+                    "type": "string",
+                    "example": "TIN99812"
+                },
+                "subject_name": {
+                    "type": "string",
+                    "example": "Lập Trình Java"
+                },
+                "credits": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "is_mandatory": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "department": {
+                    "type": "string",
+                    "example": "Tin Học"
+                }
+            },
+            "required": ["term_id", "subject_code", "subject_name", "credits", "is_mandatory", "term_semester", "department"]
+        },
+        "TermRequest": {
+            "type": "object",
+            "properties": {
+                "term_semester": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "term_from_year": {
+                    "type": "integer",
+                    "example": 2023
+                },
+                "term_to_year": {
+                    "type": "integer",
+                    "example": 2024
+                }
+            },
+            "required": ["term_semester", "term_from_year", "term_to_year"]
         }
     }
 }`

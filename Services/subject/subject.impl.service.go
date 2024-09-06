@@ -46,21 +46,6 @@ func (a *SubjectImplementService) CreateSubject(subjectInput Models.SubjectInput
 	}
 	//termId := utils.ConvertStringToObjectId(subjectInput.TermID)
 	//filterTerm := bson.M{"_id": termId}
-	filter := bson.M{
-		"$and": []bson.M{
-			{"term_semester": subjectInput.TermSemester},
-			{"term_from_year": subjectInput.TermFromYear},
-			{"term_to_year": subjectInput.TermToYear},
-		},
-	}
-	var term Models.TermModel
-	err = a.termcollection.FindOne(a.ctx, filter).Decode(&term)
-	if err == mongo.ErrNoDocuments {
-		return errors.New("Học kỳ không tồn tại trong hệ thống!")
-	}
-	if err != nil {
-		return errors.New("Học kỳ không tồn tại trong hệ thống!")
-	}
 	if exists {
 		return errors.New("Mã môn học đã tồn tại trong hệ thống!")
 	}
@@ -71,7 +56,7 @@ func (a *SubjectImplementService) CreateSubject(subjectInput Models.SubjectInput
 		Credits:     subjectInput.Credits,
 		IsMandatory: subjectInput.IsMandatory,
 		Department:  subjectInput.Department,
-		TermID:      term.ID,
+		TermID:      subjectInput.TermID,
 		CreatedAt:   timeHoChiMinhLocal,
 		UpdatedAt:   timeHoChiMinhLocal,
 	}

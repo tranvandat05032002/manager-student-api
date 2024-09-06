@@ -1,8 +1,9 @@
 package Models
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserModel struct {
@@ -30,7 +31,7 @@ type AuthInput struct {
 }
 
 type UserUpdate struct {
-	MajorName      string    `json:"major_name" bson:"major_name"` // Chưa validate
+	MajorId        primitive.ObjectID `json:"major_id"`
 	Email          string    `json:"email" bson:"email"`
 	Password       string    `json:"password" bson:"password"`
 	Role           string    `json:"role_type" bson:"role_type"`

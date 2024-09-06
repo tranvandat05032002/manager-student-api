@@ -1,8 +1,9 @@
 package Models
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type SubjectModel struct {
@@ -18,13 +19,11 @@ type SubjectModel struct {
 }
 
 type SubjectInput struct {
+	TermID 		primitive.ObjectID `json:"term_id" binding:"required"`
 	SubjectCode  string `json:"subject_code"` // Mã học phần
 	SubjectName  string `json:"subject_name"`
 	Credits      int    `json:"credits"`
 	IsMandatory  bool   `json:"is_mandatory"` // Học phần bắt buộc
-	TermSemester int    `json:"term_semester"`
-	TermFromYear int    `json:"term_from_year"`
-	TermToYear   int    `json:"term_to_year"`
 	Department   string `json:"department"` // Khoa
 }
 type TermModel struct {

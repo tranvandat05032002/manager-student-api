@@ -298,13 +298,7 @@ func (a *UserImplementService) UpdateUser(account *Models.AccountUpdate, id prim
 	var userFind *Models.UserModel
 	err = a.FindOneData(a.usercollection, filter, &userFind)
 	if userFind.Role == "student" {
-		var majorData *Models.MajorModel
-		filterMajor := bson.M{"major_name": account.MajorName}
-		err = a.FindOneData(a.majorcollection, filterMajor, &majorData)
-		if err != nil {
-			return nil, fmt.Errorf("Major not found: %v", err)
-		}
-		updateFields["major_id"] = &majorData.Id
+		updateFields["major_id"] = account.MajorId
 	}
 	if account.Name != "" {
 		updateFields["name"] = account.Name
@@ -478,7 +472,7 @@ func (a *UserImplementService) ForgotPasswordByOTP(forgotPasswordInput *Models.F
 	}
 	filter := bson.D{
 		{"user_id", user.Id},
-		{"otpcode", forgotPasswordInput.OtpToken},
+		{"otp_code", forgotPasswordInput.OtpToken},
 	}
 	err = a.otpcollection.FindOne(a.ctx, filter).Decode(&otpRes)
 	if err != nil {
@@ -531,5 +525,4 @@ func (a *UserImplementService) SearchUser(name string, page, limit int) ([] Mode
 		return nil, 0, err
 	}
 	return userRes, int(totalCount), nil
-
 }

@@ -112,19 +112,13 @@ func (majorController *MajorController) SearchMajorController(ctx *gin.Context) 
 	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Tìm kiếm ngành thành công!!", majors, total, page, limit))
 }
 func (majorController *MajorController) RegisterMajorRoutes(rg *gin.RouterGroup) {
-	majorroute := rg.Group("/major") // Client
-	{
-		majorroute.Use(Middlewares.AuthValidationBearerMiddleware)
-		{
-			majorroute.GET("/details/:id", majorController.GetMajorDetailsController)
-			majorroute.GET("/all", majorController.GetAllMajorController)
-		}
-	}
 	majoradminroute := rg.Group("/admin/major")
 	{
 		majoradminroute.Use(Middlewares.AuthValidationBearerMiddleware)
 		majoradminroute.Use(Middlewares.RoleMiddleware("admin"))
 		{
+			majoradminroute.GET("/details/:id", majorController.GetMajorDetailsController)
+			majoradminroute.GET("/all", majorController.GetAllMajorController)
 			majoradminroute.POST("/add", majorController.CreateMajorController)
 			majoradminroute.GET("/search", majorController.SearchMajorController)
 			majoradminroute.DELETE("/:id", majorController.DeleteMajorController)

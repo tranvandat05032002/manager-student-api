@@ -112,19 +112,13 @@ func (subjectController *SubjectController) SearchSubjectController(ctx *gin.Con
 	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Tìm kiếm môn học thành công!!", subjects, total, page, limit))
 }
 func (subjectController *SubjectController) RegisterSubjectRoutes(rg *gin.RouterGroup) {
-	subjectroute := rg.Group("/subject")
-	{
-		subjectroute.Use(Middlewares.AuthValidationBearerMiddleware)
-		{
-			subjectroute.GET("/all", subjectController.GetAllSubjectController)
-			subjectroute.GET("/details/:id", subjectController.GetSubjectDetailsController)
-		}
-	}
 	subjectadminroute := rg.Group("/admin/subject")
 	{
 		subjectadminroute.Use(Middlewares.AuthValidationBearerMiddleware)
 		subjectadminroute.Use(Middlewares.RoleMiddleware("admin"))
 		{
+			subjectadminroute.GET("/all", subjectController.GetAllSubjectController)
+			subjectadminroute.GET("/details/:id", subjectController.GetSubjectDetailsController)
 			subjectadminroute.POST("/add", subjectController.CreateSubjectController)
 			subjectadminroute.GET("/search", subjectController.SearchSubjectController)
 			subjectadminroute.DELETE("/:id", subjectController.DeleteSubjectController)

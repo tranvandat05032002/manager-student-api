@@ -96,19 +96,13 @@ func (termController *TermController) GetTermDetailsController(ctx *gin.Context)
 	)
 }
 func (termController *TermController) RegisterTermRoutes(rg *gin.RouterGroup) {
-	termroute := rg.Group("/term")
-	{
-		termroute.Use(Middlewares.AuthValidationBearerMiddleware)
-		{
-			termroute.GET("/all", termController.GetAllTermController)
-			termroute.GET("/details/:id", termController.GetTermDetailsController)
-		}
-	}
 	termadminroute := rg.Group("/admin/term")
 	{
 		termadminroute.Use(Middlewares.AuthValidationBearerMiddleware)
 		termadminroute.Use(Middlewares.RoleMiddleware("admin"))
 		{
+			termadminroute.GET("/all", termController.GetAllTermController)
+			termadminroute.GET("/details/:id", termController.GetTermDetailsController)
 			termadminroute.POST("/add", termController.CreateTermController)
 			termadminroute.DELETE("/:id", termController.DeleteTermController)
 			termadminroute.PATCH("/:id", termController.UpdateTermController)
