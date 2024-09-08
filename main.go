@@ -60,9 +60,10 @@ var (
 	mongoClient  *mongo.Client
 	validate     *validator.Validate
 )
+
 func createIndex(collection *mongo.Collection, indexName string, indexType interface{}) mongo.IndexModel {
-	if(indexType == "text") {
-		indexModelText := mongo.IndexModel{Keys: bson.D{{indexName, indexType}}, Options: options.Index().SetDefaultLanguage("none")}	
+	if indexType == "text" {
+		indexModelText := mongo.IndexModel{Keys: bson.D{{indexName, indexType}}, Options: options.Index().SetDefaultLanguage("none")}
 		return indexModelText
 	}
 	indexModelNotText := mongo.IndexModel{Keys: bson.D{{indexName, indexType}}}
@@ -109,11 +110,11 @@ func InitializeDatabase() {
 		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
 	}
 	if !indexUserExists {
-        indexUserModel := createIndex(userco, "name", "text")
+		indexUserModel := createIndex(userco, "name", "text")
 		userco.Indexes().CreateOne(context.TODO(), indexUserModel)
-    } else {
-        fmt.Println("Index already exists:", index_name_user)
-    }
+	} else {
+		fmt.Println("Index already exists:", index_name_user)
+	}
 	// Token collection
 	tokenco = mongoCon.Collection("Tokens")
 	// OTP collection
@@ -128,11 +129,11 @@ func InitializeDatabase() {
 		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
 	}
 	if !indexMajorExists {
-        indexMajorModel := createIndex(majorco, "major_name", "text")
+		indexMajorModel := createIndex(majorco, "major_name", "text")
 		majorco.Indexes().CreateOne(context.TODO(), indexMajorModel)
-    } else {
-        fmt.Println("Index already exists:", indexMajorName)
-    }
+	} else {
+		fmt.Println("Index already exists:", indexMajorName)
+	}
 	// Subject collection
 	subjectco = mongoCon.Collection("Subjects")
 	indexSubjectName := "subject_name_text"
@@ -141,18 +142,18 @@ func InitializeDatabase() {
 		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
 	}
 	if !indexSubjectExists {
-        indexSubjectModel := createIndex(subjectco, "subject_name", "text")
+		indexSubjectModel := createIndex(subjectco, "subject_name", "text")
 		subjectco.Indexes().CreateOne(context.TODO(), indexSubjectModel)
-    } else {
-        fmt.Println("Index already exists:", indexSubjectName)
-    }
+	} else {
+		fmt.Println("Index already exists:", indexSubjectName)
+	}
 	// Term collection
 	termco = mongoCon.Collection("Terms")
 
 	us = user.NewUserService(userco, majorco, tokenco, otpco, ctx)
 	uc = Controllers.New(us)
 
-	ms = media.NewMediaService(mediaco, ctx)
+	ms = media.NewMediaService(mediaco, userco, ctx)
 	mc = Controllers.NewMedia(ms)
 
 	mjs = major.NewMajorService(majorco, ctx)
