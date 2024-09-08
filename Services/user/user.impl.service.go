@@ -507,7 +507,7 @@ func (a *UserImplementService) ForgotPasswordByOTP(forgotPasswordInput *Models.F
 	return true, nil
 }
 
-func (a *UserImplementService) SearchUser(name string, page, limit int) ([] Models.UserModel, int, error) {
+func (a *UserImplementService) SearchUser(name string, page, limit int) ([]Models.UserModel, int, error) {
 	skip := (page - 1) * limit
 	totalCount, err := a.usercollection.CountDocuments(a.ctx, bson.D{{"$text", bson.D{{"$search", name}}}})
 	pipeline := bson.A{
@@ -525,4 +525,44 @@ func (a *UserImplementService) SearchUser(name string, page, limit int) ([] Mode
 		return nil, 0, err
 	}
 	return userRes, int(totalCount), nil
+}
+func (a *UserImplementService) GetAllUserRoleIsStudent(page, limit int) ([]Models.UserModel, int, error) {
+	skip := limit * (page - 1)
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
+	cur, err := a.usercollection.Find(a.ctx, bson.M{"role_type": constant.STUDENT}, opts)
+	total, err := a.usercollection.CountDocuments(a.ctx, bson.M{"role_type": constant.STUDENT})
+	defer cur.Close(a.ctx)
+	var students []Models.UserModel
+	for cur.Next(a.ctx) {
+		var student Models.UserModel
+		err := cur.Decode(&student)
+		if err != nil {
+			return nil, 0, err
+		}
+		students = append(students, student)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, 0, err
+	}
+	return students, int(total), err
+}
+func (a *UserImplementService) GetAllUserRoleIsTeacher(page, limit int) ([]Models.UserModel, int, error) {
+	skip := limit * (page - 1)
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
+	cur, err := a.usercollection.Find(a.ctx, bson.M{"role_type": constant.TEACHER}, opts)
+	total, err := a.usercollection.CountDocuments(a.ctx, bson.M{"role_type": constant.TEACHER})
+	defer cur.Close(a.ctx)
+	var teachers []Models.UserModel
+	for cur.Next(a.ctx) {
+		var teacher Models.UserModel
+		err := cur.Decode(&teacher)
+		if err != nil {
+			return nil, 0, err
+		}
+		teachers = append(teachers, teacher)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, 0, err
+	}
+	return teachers, int(total), err
 }

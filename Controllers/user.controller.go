@@ -298,6 +298,42 @@ func (userController *UserController) SearchUser(ctx *gin.Context) {
 	users, total, _ := userController.UserService.SearchUser(name, page, limit)
 	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Tìm kiếm user thành công!!", users, total, page, limit))
 }
+func (userController *UserController) GetAllUserRoleIsStudent(ctx *gin.Context) {
+	limitStr := ctx.Query("limit")
+	pageStr := ctx.Query("page")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 5
+	}
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page <= 0 {
+		page = 1
+	}
+	terms, total, err := userController.UserService.GetAllUserRoleIsStudent(page, limit)
+	if err != nil {
+		common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Lấy danh sách sinh viên thành công", terms, total, page, limit))
+}
+func (userController *UserController) GetAllUserRoleIsTeacher(ctx *gin.Context) {
+	limitStr := ctx.Query("limit")
+	pageStr := ctx.Query("page")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 5
+	}
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page <= 0 {
+		page = 1
+	}
+	terms, total, err := userController.UserService.GetAllUserRoleIsTeacher(page, limit)
+	if err != nil {
+		common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Lấy danh sách giáo viên thành công", terms, total, page, limit))
+}
 func (userController *UserController) RegisterUserRoutes(rg *gin.RouterGroup) {
 	userroute := rg.Group("/user") // Client
 	{
@@ -323,6 +359,8 @@ func (userController *UserController) RegisterUserRoutes(rg *gin.RouterGroup) {
 	{
 		adminroute.GET("/all", userController.GetAll)
 		adminroute.GET("/user/search", userController.SearchUser)
+		adminroute.GET("/user/student/all", userController.GetAllUserRoleIsStudent)
+		adminroute.GET("/user/teacher/all", userController.GetAllUserRoleIsTeacher)
 		adminroute.PATCH("/update/:id", userController.UpdateUser)
 		adminroute.DELETE("/delete/:user_id", userController.DeleteUser)
 	}

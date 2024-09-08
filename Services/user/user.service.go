@@ -17,6 +17,8 @@ type UserService interface {
 	UpdateMe(string, *Models.UserUpdate) (*Models.UserModel, error)
 	GetAccount(string) (*Models.UserModel, error)
 	GetAll(int, int) ([]*Models.UserModel, int, error)
+	GetAllUserRoleIsStudent(int, int) ([]Models.UserModel, int, error)
+	GetAllUserRoleIsTeacher(int, int) ([]Models.UserModel, int, error)
 	UpdateUser(*Models.AccountUpdate, primitive.ObjectID) (*Models.UserModel, error)
 	DeleteUser(string) (int, error)
 	ChangePassword(string, *Models.ChangePasswordInput) error
@@ -27,7 +29,6 @@ type UserService interface {
 	ResendOTP(primitive.ObjectID, string) (bool, error)
 	Logout(string, primitive.ObjectID) error
 	SearchUser(string, int, int) ([]Models.UserModel, int, error)
-
 	// Student
 	//GetStudentDetails(primitive.ObjectID, primitive.ObjectID) (*Models.StudentDetail, error)
 }
