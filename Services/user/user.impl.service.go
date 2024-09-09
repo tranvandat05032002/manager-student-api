@@ -407,14 +407,14 @@ func (a *UserImplementService) FindEmail(email string) (*Models.UserModel, error
 	}
 	return user, nil
 }
-func (a *UserImplementService) VerifyOTP(email, otp string) (bool, error) {
+func (a *UserImplementService) VerifyOTP(email, otpHashReq string) (bool, error) {
 	var user *Models.UserModel
-	var otpRes *Models.OTPRes
+	var otpRes *Models.OTPModel
 	user, err := a.FindEmail(email)
 	if err != nil {
 		return false, err
 	}
-	filter := bson.M{"user_id": user.Id}
+	filter := bson.M{"$and": bson.A{bson.M{"user_id": user.Id}, bson.M{"otp_code": otpHashReq}}}
 	err = a.otpcollection.FindOne(a.ctx, filter).Decode(&otpRes)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -423,11 +423,11 @@ func (a *UserImplementService) VerifyOTP(email, otp string) (bool, error) {
 		return false, errors.New("Email không tồn tại!")
 	}
 	timeNowUTC := time.Now().UTC()
+	if otpHashReq != otpRes.OTPCode {
+		return false, errors.New("OTP không đúng!")
+	}
 	if timeNowUTC.After(otpRes.ExpiresAt) {
 		return false, errors.New("OTP đã hết hạn!")
-	}
-	if !utils.CheckOTPHash(otp, otpRes.OTPCode) {
-		return false, errors.New("OTP không đúng!")
 	}
 	return true, nil
 }
