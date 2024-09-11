@@ -13,6 +13,7 @@ import (
 var (
 	err         error
 	mongoclient *mongo.Client
+	mongoDB     *mongo.Database
 )
 
 func Connect(ctx context.Context) (*mongo.Database, error) {
@@ -28,6 +29,9 @@ func Connect(ctx context.Context) (*mongo.Database, error) {
 	}
 
 	fmt.Println("mongo connection established")
-
+	mongoDB = mongoclient.Database("MeteorDB")
 	return mongoclient.Database("MeteorDB"), err
+}
+func GetMongoDB() *mongo.Database {
+	return mongoDB
 }

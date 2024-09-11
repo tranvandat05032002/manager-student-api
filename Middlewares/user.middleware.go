@@ -1,15 +1,23 @@
 package Middlewares
 
 import (
+	"context"
+	"gin-gonic-gom/Models"
 	"gin-gonic-gom/common"
+	"gin-gonic-gom/config"
 	"gin-gonic-gom/utils"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
+var ctx context.Context
+
 func AuthValidationBearerMiddleware(c *gin.Context) {
+	var ctx, _ = context.WithTimeout(context.Background(), 100*time.Second)
 	authHeader := c.GetHeader("Authorization")
 	deviced := c.Request.Header.Get("User-Agent")
 	if authHeader == "" {
@@ -22,6 +30,15 @@ func AuthValidationBearerMiddleware(c *gin.Context) {
 	accessSecretKey := os.Getenv("ACCESS_TOKEN_SECRET")
 	accessSecretKeyByte := []byte(accessSecretKey)
 	claims, err := utils.DecodedToken(tokenString, accessSecretKeyByte)
+	tokenCollection := config.GetMongoDB().Collection("Tokens")
+	filterToken := bson.M{"access_token": tokenString}
+	var tokenRes Models.TokenModel
+	err = tokenCollection.FindOne(ctx, filterToken).Decode(&tokenRes)
+	if err != nil {
+		common.NewErrorResponse(c, http.StatusUnauthorized, "Không tìm thấy token!", err.Error())
+		c.Abort()
+		return
+	}
 	if err != nil {
 		common.NewErrorResponse(c, http.StatusUnauthorized, "Decoded thất bại!", err.Error())
 		c.Abort()

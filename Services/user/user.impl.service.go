@@ -138,6 +138,7 @@ func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Con
 	updateToken := bson.D{{"$set", bson.D{
 		{"user_id", foundUser.Id},
 		{"refresh_token", refresh_token},
+		{"access_token", access_token},
 		{"exp", utils.ConvertDurationToTimeUTC(expRefreshToken)},
 		{"deviced", deviced},
 		{"created_at", time.Now().UTC()},

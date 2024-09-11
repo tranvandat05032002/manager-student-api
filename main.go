@@ -152,7 +152,6 @@ func InitializeDatabase() {
 
 	us = user.NewUserService(userco, majorco, tokenco, otpco, ctx)
 	uc = Controllers.New(us)
-
 	ms = media.NewMediaService(mediaco, userco, ctx)
 	mc = Controllers.NewMedia(ms)
 
