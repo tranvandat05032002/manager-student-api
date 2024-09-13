@@ -44,13 +44,21 @@ func (a *MediaImplementService) UploadExcelDataUser(userList []Models.UserModel)
 	duplicateCount := 0
 	for _, user := range userList {
 		var existsUser Models.UserModel
-		err := a.usercollection.FindOne(a.ctx, bson.M{"email": user.Email}).Decode(&existsUser)
+		filter := bson.D{
+			{"$or",
+				bson.A{
+					bson.D{{"email", user.Email}},
+					bson.D{{"phone", user.Phone}},
+				}},
+		}
+		err := a.usercollection.FindOne(a.ctx, filter).Decode(&existsUser)
 		if err == mongo.ErrNoDocuments {
 			usersInsertInterface = append(usersInsertInterface, user)
 		} else if err != nil {
 			return err
 		} else {
 			duplicateMessage := fmt.Sprintf("Email %s đã tồn tại \\n", existsUser.Email) // client replace thành <br>
+			duplicateMessage = fmt.Sprintf("Số điện thoại %s đã tồn tại \\n", existsUser.Phone)
 			duplicateEmails = append(duplicateEmails, duplicateMessage)
 			duplicateCount++
 		}
