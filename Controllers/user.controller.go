@@ -52,15 +52,25 @@ func (userController *UserController) CreateUser(ctx *gin.Context) {
 	}
 	//Check exist email in DB
 	result, errCheckMail := userController.UserService.CheckExistEmail(user.Email)
-	if result == true {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailExistMessage, "Email already exists")
+	resultPhone, errCheckPhone := userController.UserService.CheckExistEmail(user.Email)
+	if result == true || resultPhone {
+		if result {
+			common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailExistMessage, "Email already exists")
+		} else if resultPhone {
+			common.NewErrorResponse(ctx, http.StatusBadRequest, "Số điện thoại đã tồn tại", "Phone already exists")
+		}
 		return
 	}
 
-	if errCheckMail != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailExistMessage, errCheckMail.Error())
+	if errCheckMail != nil || errCheckPhone != nil {
+		if errCheckMail != nil {
+			common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailExistMessage, errCheckMail.Error())
+		} else if errCheckPhone != nil {
+			common.NewErrorResponse(ctx, http.StatusBadRequest, "Số điện thoại đã tồn tại", errCheckPhone.Error())
+		}
 		return
 	}
+
 	var password string = user.Password
 	passwordHash, _ := utils.HashPassword(password)
 	user.Password = passwordHash

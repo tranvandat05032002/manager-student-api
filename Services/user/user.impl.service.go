@@ -93,6 +93,18 @@ func (a *UserImplementService) CheckExistEmail(email string) (bool, error) {
 	}
 	return true, nil
 }
+func (a *UserImplementService) CheckExistPhone(phone string) (bool, error) {
+	var user *Models.UserModel
+	query := bson.M{"phone": phone}
+	err := a.usercollection.FindOne(a.ctx, query).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
 func (a *UserImplementService) DeleteTokenExp() {
 	expiryThreshold := time.Now().UTC()
 	_, err := a.tokencollection.DeleteMany(a.ctx, bson.M{"exp": bson.M{"$lte": expiryThreshold}})
@@ -261,8 +273,10 @@ func (a *UserImplementService) GetAccount(userId string) (*Models.UserModel, err
 func (a *UserImplementService) GetAll(page, limit int) ([]*Models.UserModel, int, error) {
 	skip := limit * (page - 1)
 	opts := options.Find().SetProjection(bson.D{{"password", 0}}).SetSkip(int64(skip)).SetLimit(int64(limit))
-	total, err := a.usercollection.CountDocuments(a.ctx, bson.M{})
-	cur, err := a.usercollection.Find(a.ctx, bson.M{}, opts)
+	total, err := a.usercollection.CountDocuments(a.ctx, bson.M{"depending_delete": constant.NOTDEPENDING})
+	cur, err := a.usercollection.Find(a.ctx, bson.M{
+		"depending_delete": constant.NOTDEPENDING,
+	}, opts)
 	defer cur.Close(a.ctx)
 	var users []*Models.UserModel
 	for cur.Next(a.ctx) {
@@ -599,8 +613,14 @@ func (a *UserImplementService) SearchUser(name string, page, limit int) ([]Model
 func (a *UserImplementService) GetAllUserRoleIsStudent(page, limit int) ([]Models.UserModel, int, error) {
 	skip := limit * (page - 1)
 	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
-	cur, err := a.usercollection.Find(a.ctx, bson.M{"role_type": constant.STUDENT}, opts)
-	total, err := a.usercollection.CountDocuments(a.ctx, bson.M{"role_type": constant.STUDENT})
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{"role_type": constant.STUDENT},
+			bson.M{"depending_delete": constant.NOTDEPENDING},
+		},
+	}
+	cur, err := a.usercollection.Find(a.ctx, filter, opts)
+	total, err := a.usercollection.CountDocuments(a.ctx, filter)
 	defer cur.Close(a.ctx)
 	var students []Models.UserModel
 	for cur.Next(a.ctx) {
@@ -619,8 +639,14 @@ func (a *UserImplementService) GetAllUserRoleIsStudent(page, limit int) ([]Model
 func (a *UserImplementService) GetAllUserRoleIsTeacher(page, limit int) ([]Models.UserModel, int, error) {
 	skip := limit * (page - 1)
 	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
-	cur, err := a.usercollection.Find(a.ctx, bson.M{"role_type": constant.TEACHER}, opts)
-	total, err := a.usercollection.CountDocuments(a.ctx, bson.M{"role_type": constant.TEACHER})
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{"role_type": constant.TEACHER},
+			bson.M{"depending_delete": constant.NOTDEPENDING},
+		},
+	}
+	cur, err := a.usercollection.Find(a.ctx, filter, opts)
+	total, err := a.usercollection.CountDocuments(a.ctx, filter)
 	defer cur.Close(a.ctx)
 	var teachers []Models.UserModel
 	for cur.Next(a.ctx) {
