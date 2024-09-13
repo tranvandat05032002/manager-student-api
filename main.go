@@ -80,8 +80,7 @@ func InitializeConfig() {
 	server = gin.Default()
 	//config TrustedProxies and IPV6
 	server.SetTrustedProxies([]string{
-		"127.0.0.1", // Địa chỉ IPv4 localhost
-		"0.0.0.0",
+		os.Getenv("HOST"),
 		"192.168.1.10",                          // Địa chỉ IPv4 proxy tin cậy
 		"::1",                                   // Địa chỉ IPv6 localhost
 		"2405:4802:6563:140:10b3:beb9:c910:16e", // Địa chỉ IPv6 proxy tin cậy
@@ -173,8 +172,13 @@ func main() {
 	defer func(mongoClient *mongo.Client, ctx context.Context) {
 		if err := mongoClient.Disconnect(ctx); err != nil {
 			log.Println("Error disconnecting MongoDB client: ---> ", err)
+			return
 		}
 	}(mongoClient, ctx)
+	if err := utils.InitCache(); err != nil {
+		fmt.Println(err)
+		return
+	}
 	//Document
 	server.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	//REST API
@@ -188,15 +192,15 @@ func main() {
 	loc, _ := time.LoadLocation("Asia/Ho_Chi_Minh")
 	c := cron.New(cron.WithLocation(loc))
 	// 4 giờ sáng mỗi ngày thì cron job sẽ hoạt động để xóa token/otp hết hạn
-	_, err := c.AddFunc("0 4 * * *", us.DeleteTokenExp)
-	_, errOTP := c.AddFunc("0 4 * * *", us.DeleteOTPExp)
-	if err != nil {
-		log.Fatalf("Error adding cron job: %v", err)
+	if _, err := c.AddFunc("0 4 * * *", us.DeleteTokenExp); err != nil {
+		log.Fatalf("Error adding cron job delete Token: %v", err)
 	}
-	if errOTP != nil {
-		log.Fatalf("Error adding cron job: %v", err)
+	if _, errOTP := c.AddFunc("0 4 * * *", us.DeleteOTPExp); errOTP != nil {
+		log.Fatalf("Error adding cron job delete OTP: %v", errOTP)
 	}
-
+	if _, errDelUser := c.AddFunc("@every 1m", us.CheckAndDeleteUsers); errDelUser != nil {
+		log.Fatalf("Error adding cron job delete User: %v", errDelUser)
+	}
 	c.Start()
 	go func() {
 		if err := server.Run(os.Getenv("HOST") + ":" + os.Getenv("PORT")); err != nil {

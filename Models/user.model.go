@@ -7,22 +7,24 @@ import (
 )
 
 type UserModel struct {
-	Id             primitive.ObjectID  `bson:"_id"`
-	MajorId        *primitive.ObjectID `bson:"major_id"`
-	Email          string              `json:"email" bson:"email" binding:"required,email"`
-	Password       string              `json:"password" bson:"password" binding:"required,min=6,max=30"`
-	Role           string              `json:"role_type" bson:"role_type" binding:"required,eq=student|eq=teacher|eq=admin"`
-	Phone          string              `json:"phone" bson:"phone" binding:"required,len=10""`
-	Name           string              `json:"name" bson:"name" binding:"required,min=2,max=100"`
-	Avatar         string              `json:"avatar" bson:"avatar" binding:"required,url"`
-	Gender         *int                `json:"gender" bson:"gender"`
-	Department     string              `json:"department" bson:"department"`
-	DateOfBirth    time.Time           `json:"date_of_birth" bson:"date_of_birth"`
-	EnrollmentDate time.Time           `json:"enrollment_date" bson:"enrollment_date"`
-	HireDate       time.Time           `json:"hire_date" bson:"hire_date"`
-	Address        string              `json:"address" bson:"address"`
-	CreatedAt      time.Time           `json:"created_at" bson:"created_at"`
-	UpdatedAt      time.Time           `json:"updated_at" bson:"updated_at"`
+	Id              primitive.ObjectID  `bson:"_id"`
+	MajorId         *primitive.ObjectID `bson:"major_id"`
+	Email           string              `json:"email" bson:"email" binding:"required,email"`
+	Password        string              `json:"password" bson:"password" binding:"required,min=6,max=30"`
+	Role            string              `json:"role_type" bson:"role_type" binding:"required,eq=student|eq=teacher|eq=admin"`
+	Phone           string              `json:"phone" bson:"phone" binding:"required,len=10""`
+	Name            string              `json:"name" bson:"name" binding:"required,min=2,max=100"`
+	Avatar          string              `json:"avatar" bson:"avatar" binding:"required,url"`
+	Gender          *int                `json:"gender" bson:"gender"`
+	Department      string              `json:"department" bson:"department"`
+	DateOfBirth     time.Time           `json:"date_of_birth" bson:"date_of_birth"`
+	EnrollmentDate  time.Time           `json:"enrollment_date" bson:"enrollment_date"`
+	HireDate        time.Time           `json:"hire_date" bson:"hire_date"`
+	Address         string              `json:"address" bson:"address"`
+	CreatedAt       time.Time           `json:"created_at" bson:"created_at"`
+	UpdatedAt       time.Time           `json:"updated_at" bson:"updated_at"`
+	DeleteAt        *time.Time          `json:"delete_at" bson:"delete_at"`
+	DependingDelete bool                `json:"depending_delete" bson:"depending_delete"`
 }
 
 type AuthInput struct {
@@ -32,18 +34,18 @@ type AuthInput struct {
 
 type UserUpdate struct {
 	MajorId        primitive.ObjectID `json:"major_id"`
-	Email          string    `json:"email" bson:"email"`
-	Password       string    `json:"password" bson:"password"`
-	Role           string    `json:"role_type" bson:"role_type"`
-	Phone          string    `json:"phone" bson:"phone"`
-	Name           string    `json:"name" bson:"name"`
-	Avatar         string    `json:"avatar" bson:"avatar"`
-	Gender         int       `json:"gender" bson:"gender"`
-	Department     string    `json:"department" bson:"department"`
-	DateOfBirth    time.Time `json:"date_of_birth" bson:"dateOfBirth"`
-	EnrollmentDate time.Time `json:"enrollment_date" bson:"enrollmentDate"`
-	HireDate       time.Time `json:"hire_date" bson:"hireDate"`
-	Address        string    `json:"address" bson:"address"`
+	Email          string             `json:"email" bson:"email"`
+	Password       string             `json:"password" bson:"password"`
+	Role           string             `json:"role_type" bson:"role_type"`
+	Phone          string             `json:"phone" bson:"phone"`
+	Name           string             `json:"name" bson:"name"`
+	Avatar         string             `json:"avatar" bson:"avatar"`
+	Gender         int                `json:"gender" bson:"gender"`
+	Department     string             `json:"department" bson:"department"`
+	DateOfBirth    time.Time          `json:"date_of_birth" bson:"dateOfBirth"`
+	EnrollmentDate time.Time          `json:"enrollment_date" bson:"enrollmentDate"`
+	HireDate       time.Time          `json:"hire_date" bson:"hireDate"`
+	Address        string             `json:"address" bson:"address"`
 }
 type CreateUserInput struct {
 	Email    string `json:"email" binding:"required,email"`

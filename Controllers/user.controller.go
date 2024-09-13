@@ -165,16 +165,12 @@ func (userController *UserController) UpdateUser(ctx *gin.Context) {
 }
 func (userController *UserController) DeleteUser(ctx *gin.Context) {
 	userId := ctx.Param("user_id")
-	res, err := userController.UserService.DeleteUser(userId)
+	err := userController.UserService.DeleteUser(userId)
 	if err != nil {
 		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorDeleteUser, err.Error())
 		return
 	}
-	if res < 1 {
-		common.NewErrorResponse(ctx, http.StatusNotFound, common.ErrorFindUser, err.Error())
-		return
-	}
-	message := fmt.Sprintf("Xóa thành công %d account", res)
+	message := fmt.Sprintf("Xóa thành công account")
 	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, message, nil))
 }
 func (userController *UserController) ChangePassword(ctx *gin.Context) {
@@ -334,6 +330,34 @@ func (userController *UserController) GetAllUserRoleIsTeacher(ctx *gin.Context) 
 	}
 	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Lấy danh sách giáo viên thành công", terms, total, page, limit))
 }
+func (userController *UserController) GetListUserDependingDeletion(ctx *gin.Context) {
+	limitStr := ctx.Query("limit")
+	pageStr := ctx.Query("page")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		limit = 5
+	}
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page <= 0 {
+		page = 1
+	}
+	terms, total, err := userController.UserService.GetListUserDependingDeletion(page, limit)
+	if err != nil {
+		common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy danh sách!", err.Error())
+		return
+	}
+	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Lấy danh sách sinh viên đang chờ xóa thành công", terms, total, page, limit))
+}
+func (userController *UserController) RestoreUser(ctx *gin.Context) {
+	userId := ctx.Param("id")
+	err := userController.UserService.RestoreUser(utils.ConvertStringToObjectId(userId))
+	if err != nil {
+		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorDeleteUser, err.Error())
+		return
+	}
+	message := fmt.Sprintf("khôi phục tài khoản %s", userId)
+	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, message, nil))
+}
 func (userController *UserController) RegisterUserRoutes(rg *gin.RouterGroup) {
 	userroute := rg.Group("/user") // Client
 	{
@@ -363,5 +387,7 @@ func (userController *UserController) RegisterUserRoutes(rg *gin.RouterGroup) {
 		adminroute.GET("/user/teacher/all", userController.GetAllUserRoleIsTeacher)
 		adminroute.PATCH("/update/:id", userController.UpdateUser)
 		adminroute.DELETE("/delete/:user_id", userController.DeleteUser)
+		adminroute.GET("/user/pending-deletion", userController.GetListUserDependingDeletion)
+		adminroute.PATCH("/user/restore/:id", userController.RestoreUser)
 	}
 }

@@ -1,0 +1,15 @@
+version: '3'
+services:
+    redis:
+        image: "redis:latest"
+        container_name: "redis-manager-school-container"
+        ports:
+            - "6379:6379"
+    app:
+        build: .
+        command: go run main.go
+        depends_on:
+            - redis
+        volumes:
+            - .:/app
+        working_dir: /app

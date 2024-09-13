@@ -9,9 +9,11 @@ import (
 	"gin-gonic-gom/constant"
 	"gin-gonic-gom/helper"
 	"gin-gonic-gom/utils"
+	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -54,22 +56,24 @@ func (a *UserImplementService) CreateUser(input *Models.CreateUserInput) error {
 	var err error
 	timeLocalHoChiMinh, _ := utils.GetCurrentTimeInLocal("Asia/Ho_Chi_Minh")
 	user = Models.UserModel{
-		Id:             primitive.NewObjectID(),
-		MajorId:        nil,
-		Role:           input.Role,
-		Name:           input.Name,
-		Email:          input.Email,
-		Password:       input.Password,
-		Avatar:         input.Avatar,
-		Phone:          input.Phone,
-		Address:        "",
-		Department:     "",
-		Gender:         nil,
-		DateOfBirth:    timeLocalHoChiMinh,
-		EnrollmentDate: timeLocalHoChiMinh,
-		HireDate:       timeLocalHoChiMinh,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		Id:              primitive.NewObjectID(),
+		MajorId:         nil,
+		Role:            input.Role,
+		Name:            input.Name,
+		Email:           input.Email,
+		Password:        input.Password,
+		Avatar:          input.Avatar,
+		Phone:           input.Phone,
+		Address:         "",
+		Department:      "",
+		Gender:          nil,
+		DateOfBirth:     timeLocalHoChiMinh,
+		EnrollmentDate:  timeLocalHoChiMinh,
+		HireDate:        timeLocalHoChiMinh,
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
+		DeleteAt:        nil,
+		DependingDelete: constant.NOTDEPENDING,
 	}
 	_, err = a.usercollection.InsertOne(a.ctx, user)
 	if err != nil {
@@ -104,6 +108,39 @@ func (a *UserImplementService) DeleteOTPExp() {
 		log.Printf("Error deleting expired OTP: %v", err)
 	}
 }
+func (a *UserImplementService) CheckAndDeleteUsers() {
+	filter := bson.M{
+		"depending_delete": constant.ISDEPENDING,
+	}
+	cur, err := a.usercollection.Find(a.ctx, filter)
+	if err != nil {
+		log.Printf("Đã xảy ra lỗi trong quá trình tìm user hết hạn")
+	}
+	defer cur.Close(a.ctx)
+	for cur.Next(a.ctx) {
+		var user Models.UserModel
+		if err := cur.Decode(&user); err != nil {
+			log.Println("Lỗi khi decoded user: ", err)
+			continue
+		}
+		// kiem tra neu key user trong Redis da het han
+		filterDel := bson.M{
+			"_id": user.Id,
+		}
+		keyUser := user.Id.Hex()
+		ttl, err := utils.CheckTTL(keyUser)
+		if err != nil || ttl <= 0 {
+			//Xóa vĩnh viễn user khỏi mongoDB
+			_, err = a.usercollection.DeleteOne(a.ctx, filterDel)
+			if err != nil {
+				log.Printf("Lỗi khi xóa user: %v", err)
+				return
+			} else {
+				log.Printf("Xóa user %s thành công!!!", keyUser)
+			}
+		}
+	}
+}
 func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Context) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	var foundUser Models.UserModel
@@ -124,6 +161,11 @@ func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Con
 	defer cancel()
 	if err != nil {
 		common.NewErrorResponse(c, http.StatusInternalServerError, common.ErrorInternetServer, err.Error())
+		return
+	}
+	// kiem tra xem tai khoan bi xoa chua
+	if foundUser.DependingDelete {
+		common.NewErrorResponse(c, http.StatusForbidden, "Tài khoản không tồn tại trong hệ thống", nil)
 		return
 	}
 	// Generator token and Deviced
@@ -351,10 +393,37 @@ func (a *UserImplementService) UpdateUser(account *Models.AccountUpdate, id prim
 	}
 	return nil, fmt.Errorf("Hủy update!")
 }
-func (a *UserImplementService) DeleteUser(userId string) (int, error) {
+func (a *UserImplementService) MakeUserForDeletion(userId string, redisClient *redis.Client) error {
+	return nil
+}
+func (a *UserImplementService) DeleteUser(userId string) error {
 	filter := bson.D{{"_id", utils.ConvertStringToObjectId(userId)}}
-	res, err := a.usercollection.DeleteOne(a.ctx, filter)
-	return int(res.DeletedCount), err
+	//res, err := a.usercollection.DeleteOne(a.ctx, filter)
+	//return int(res.DeletedCount), err
+	// update lai thoi gian xoa va trang thai
+	deleteAt := time.Now()
+	update := bson.M{
+		"$set": bson.M{
+			"depending_delete": constant.ISDEPENDING,
+			"delete_at":        deleteAt,
+		},
+	}
+	var userDelete Models.UserModel
+	err := a.usercollection.FindOneAndUpdate(a.ctx, filter, update, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&userDelete)
+	if err != nil {
+		return err
+	}
+	//Dat key trong Redis voi TTL 1 tieng
+	duration, err := strconv.Atoi(os.Getenv("REDIS_DURATION"))
+	if err != nil {
+		return errors.New("Xảy ra lỗi trong quá trình chuyển string sang int")
+	}
+	err = utils.SetCacheInterface(userId, userDelete, duration)
+	if err != nil {
+		return err
+	}
+	fmt.Println("user delete ---> ", userDelete)
+	return nil
 }
 func (a *UserImplementService) ChangePassword(userId string, passwordInput *Models.ChangePasswordInput) error {
 	// Kiểm tra tra mật khẩu mới và confirmPassword
@@ -566,4 +635,46 @@ func (a *UserImplementService) GetAllUserRoleIsTeacher(page, limit int) ([]Model
 		return nil, 0, err
 	}
 	return teachers, int(total), err
+}
+func (a *UserImplementService) GetListUserDependingDeletion(page, limit int) ([]Models.UserModel, int, error) {
+	skip := limit * (page - 1)
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
+	filter := bson.M{"depending_delete": constant.ISDEPENDING}
+	cur, err := a.usercollection.Find(a.ctx, filter, opts)
+	total, err := a.usercollection.CountDocuments(a.ctx, filter)
+	defer cur.Close(a.ctx)
+	var users []Models.UserModel
+	for cur.Next(a.ctx) {
+		var user Models.UserModel
+		err := cur.Decode(&user)
+		if err != nil {
+			return nil, 0, err
+		}
+		users = append(users, user)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, 0, err
+	}
+	return users, int(total), err
+}
+func (a *UserImplementService) RestoreUser(userId primitive.ObjectID) error {
+	// Xóa user trong redis
+	fmt.Println("userId --> ", userId.Hex())
+	err := utils.DelCache(userId.Hex())
+	if err != nil {
+		return err
+	}
+	// Cập nhật trạng thái của user trong mongoDB
+	filter := bson.M{"_id": userId}
+	update := bson.M{
+		"$set": bson.M{
+			"depending_delete": constant.NOTDEPENDING,
+			"delete_at":        nil,
+		},
+	}
+	_, err = a.usercollection.UpdateOne(a.ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
 }
