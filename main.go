@@ -173,12 +173,16 @@ func main() {
 	InitializeConfig()
 	InitializeDatabase()
 	defer func(mongoClient *mongo.Client, ctx context.Context) {
-		if err := mongoClient.Disconnect(ctx); err != nil {
+		err := mongoClient.Disconnect(ctx)
+		fmt.Println("Error ---> ", err)
+		if err != nil {
 			log.Println("Error disconnecting MongoDB client: ---> ", err)
 			return
 		}
 	}(mongoClient, ctx)
-	if err := utils.InitCache(); err != nil {
+	err := utils.InitCache()
+	fmt.Println("Error Redis ---> ", err)
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
