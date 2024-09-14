@@ -17,8 +17,11 @@ var (
 )
 
 func Connect(ctx context.Context) (*mongo.Database, error) {
-
-	mongoconn := options.Client().ApplyURI(os.Getenv("MONGODB_URL"))
+	MongoURL := os.Getenv("MONGO_URL")
+	if MongoURL == "" {
+		MongoURL = "mongodb://admin:tranlybuu@103.214.9.124:1236/?authSource=admin"
+	}
+	mongoconn := options.Client().ApplyURI(MongoURL)
 	mongoclient, err = mongo.Connect(ctx, mongoconn)
 	if err != nil {
 		log.Fatal("error while connecting with mongo", err)
