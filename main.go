@@ -205,8 +205,20 @@ func main() {
 		log.Fatalf("Error adding cron job delete User: %v", errDelUser)
 	}
 	c.Start()
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "4000" // Giá trị mặc định nếu không có biến môi trường PORT
+	}
+
+	// Xác định giá trị của biến môi trường HOST, mặc định là "localhost" nếu không có
+	host := os.Getenv("HOST")
+	if host == "" {
+		host = "0.0.0.0" // Giá trị mặc định nếu không có biến môi trường HOST
+	}
+
 	go func() {
-		if err := server.Run(os.Getenv("HOST") + ":" + os.Getenv("PORT")); err != nil {
+		address := host + ":" + port
+		if err := server.Run(address); err != nil {
 			log.Fatalf("Error running Gin server: %v", err)
 		}
 	}()
