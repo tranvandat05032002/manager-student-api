@@ -17,6 +17,10 @@ var (
 
 func InitCache() error {
 	ctx = context.Background()
+	address := os.Getenv("REDIS_ADDRESS")
+	if address == "" {
+		address = "redis" // Giá trị mặc định nếu không có biến môi trường HOST
+	}
 	redis_cache = redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_ADDRESS"),
 		Password: os.Getenv("REDIS_PASSWORD"),

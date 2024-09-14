@@ -5,6 +5,9 @@ services:
         container_name: "redis-manager-school-container"
         ports:
             - "6379:6379"
+        volumes:
+            - ./redis.conf:/usr/local/etc/redis/redis.conf
+        command: redis-server /usr/local/etc/redis/redis.conf
     app:
         build: .
         command: go run main.go

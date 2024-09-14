@@ -8,7 +8,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"log"
 	"os"
+	"time"
 )
+
+const CTimeOut = 10 * time.Second
 
 var (
 	err         error
@@ -19,7 +22,7 @@ var (
 func Connect(ctx context.Context) (*mongo.Database, error) {
 	MongoURL := os.Getenv("MONGO_URL")
 	if MongoURL == "" {
-		MongoURL = "mongodb://admin:tranlybuu@103.214.9.124:1236/?authSource=admin"
+		MongoURL = "mongodb://admin:tranlybuu@mongo:1236/?authSource=admin"
 	}
 	mongoconn := options.Client().ApplyURI(MongoURL)
 	mongoclient, err = mongo.Connect(ctx, mongoconn)
@@ -37,4 +40,9 @@ func Connect(ctx context.Context) (*mongo.Database, error) {
 }
 func GetMongoDB() *mongo.Database {
 	return mongoDB
+}
+func CloseMongoDB() {
+	ctx, cancel := context.WithTimeout(context.Background(), CTimeOut)
+	defer cancel()
+	_ = mongoDB.Client().Disconnect(ctx)
 }
