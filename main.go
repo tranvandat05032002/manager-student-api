@@ -70,7 +70,7 @@ func createIndex(collection *mongo.Collection, indexName string, indexType inter
 	return indexModelNotText
 }
 func InitializeConfig() {
-	env := os.Getenv("GO_ENV")
+	env := os.Getenv("ENV")
 	if env != "prod" {
 		err := godotenv.Load(".env")
 		if err != nil {
