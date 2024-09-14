@@ -13,6 +13,7 @@ import (
 	"gin-gonic-gom/config"
 	_ "gin-gonic-gom/docs"
 	"gin-gonic-gom/utils"
+	"github.com/lpernett/godotenv"
 	"log"
 	"os"
 	"time"
@@ -20,7 +21,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/lpernett/godotenv"
 	"github.com/robfig/cron/v3"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -70,9 +70,12 @@ func createIndex(collection *mongo.Collection, indexName string, indexType inter
 	return indexModelNotText
 }
 func InitializeConfig() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	env := os.Getenv("GO_ENV")
+	if env != "prod" {
+		err := godotenv.Load(".env")
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
 	if _, errFile := os.Stat("uploads/images"); os.IsNotExist(errFile) {
 		os.Mkdir("uploads/images", os.ModePerm)
