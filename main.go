@@ -6,6 +6,7 @@ import (
 	"gin-gonic-gom/Controllers"
 	"gin-gonic-gom/Services/major"
 	"gin-gonic-gom/Services/media"
+	"gin-gonic-gom/Services/schedule"
 	statiscal "gin-gonic-gom/Services/statistical"
 	"gin-gonic-gom/Services/subject"
 	"gin-gonic-gom/Services/term"
@@ -49,6 +50,8 @@ var (
 	termc        Controllers.TermController
 	statisticals statiscal.StatisticalService
 	statisticalc Controllers.StatisticalController
+	schedules    schedule.ScheduleService
+	schedulec    Controllers.ScheduleController
 	ctx          context.Context
 	userco       *mongo.Collection
 	tokenco      *mongo.Collection
@@ -57,6 +60,7 @@ var (
 	majorco      *mongo.Collection
 	subjectco    *mongo.Collection
 	termco       *mongo.Collection
+	scheduleco   *mongo.Collection
 	mongoClient  *mongo.Client
 	validate     *validator.Validate
 )
@@ -70,11 +74,19 @@ func createIndex(collection *mongo.Collection, indexName string, indexType inter
 	return indexModelNotText
 }
 func InitializeConfig() {
+
 	env := os.Getenv("ENV")
-	if env != "prod" {
-		err := godotenv.Load(".env")
+	if env == "production" {
+		err := godotenv.Load(".env.production")
+		fmt.Println("Data --> ", os.Getenv("ENV"))
 		if err != nil {
-			log.Fatal("Error loading .env file")
+			log.Fatalf("Error loading .env.production file")
+		}
+	} else {
+		err := godotenv.Load(".env.development")
+		fmt.Println("Data --> ", os.Getenv("ENV"))
+		if err != nil {
+			log.Fatalf("Error loading .env.development file")
 		}
 	}
 	if _, errFile := os.Stat("uploads/images"); os.IsNotExist(errFile) {
@@ -152,6 +164,8 @@ func InitializeDatabase() {
 	}
 	// Term collection
 	termco = mongoCon.Collection("Terms")
+	//Schedule collection
+	scheduleco = mongoCon.Collection("Schedules")
 
 	us = user.NewUserService(userco, majorco, tokenco, otpco, ctx)
 	uc = Controllers.New(us)
@@ -169,6 +183,9 @@ func InitializeDatabase() {
 
 	statisticals = statiscal.NewStatisticalService(termco, ctx)
 	statisticalc = Controllers.NewStatistical(statisticals)
+
+	schedules = schedule.NewScheduleService(scheduleco, ctx)
+	schedulec = Controllers.NewSchedule(schedules)
 }
 func main() {
 	InitializeConfig()
@@ -194,6 +211,7 @@ func main() {
 	subc.RegisterSubjectRoutes(basepath)
 	termc.RegisterTermRoutes(basepath)
 	statisticalc.RegisterStatisticalRoutes(basepath)
+	schedulec.RegisterScheduleRoutes(basepath)
 	loc, _ := time.LoadLocation("Asia/Ho_Chi_Minh")
 	c := cron.New(cron.WithLocation(loc))
 	// 4 giờ sáng mỗi ngày thì cron job sẽ hoạt động để xóa token/otp hết hạn

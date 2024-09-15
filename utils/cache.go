@@ -27,7 +27,6 @@ func InitCache() error {
 		DB:       0,
 	})
 	if pong, err := redis_cache.Ping(ctx).Result(); err != nil {
-		fmt.Println("Error ---> ", err)
 		return errors.New("Redis: Kết nối không thành công!! " + err.Error())
 	} else {
 		fmt.Println("Redis: Kết nối thành công!! ", pong)
@@ -35,10 +34,12 @@ func InitCache() error {
 	}
 }
 func SetCache(key, value string, duration int) error {
+	fmt.Println("Duration ---> ", duration)
 	fmt.Println("Cache ---> key --> value --> duration", key, value, time.Minute*time.Duration(duration))
 	return redis_cache.Set(ctx, key, value, time.Minute*time.Duration(duration)).Err()
 }
 func SetCacheInterface(key string, data interface{}, duration int) error {
+	fmt.Println("Duration ---> ", duration)
 	value, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println("SetCacheInterface: Fail to cache key")
@@ -69,6 +70,10 @@ func CheckTTL(key string) (time.Duration, error) {
 	} else {
 		return ttl, err
 	}
+}
+func GetKeys(pattern string) []string {
+	keys, _ := redis_cache.Keys(ctx, pattern+"*").Result()
+	return keys
 }
 
 //func DelAllCache() error  {

@@ -13,7 +13,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -121,6 +120,11 @@ func (a *UserImplementService) DeleteOTPExp() {
 	}
 }
 func (a *UserImplementService) CheckAndDeleteUsers() {
+	sizeKey := len(utils.GetKeys("token"))
+	if sizeKey == 0 {
+		return
+	}
+	fmt.Println("Running cron job delete user")
 	filter := bson.M{
 		"depending_delete": constant.ISDEPENDING,
 	}
@@ -135,13 +139,16 @@ func (a *UserImplementService) CheckAndDeleteUsers() {
 			log.Println("Lỗi khi decoded user: ", err)
 			continue
 		}
+		fmt.Println("User check --> ", user)
 		// kiem tra neu key user trong Redis da het han
 		filterDel := bson.M{
 			"_id": user.Id,
 		}
 		keyUser := user.Id.Hex()
 		ttl, err := utils.CheckTTL(keyUser)
+		fmt.Println("error --> ", err)
 		if err != nil || ttl <= 0 {
+			fmt.Println("Running delete user, ttl --> ", ttl)
 			//Xóa vĩnh viễn user khỏi mongoDB
 			_, err = a.usercollection.DeleteOne(a.ctx, filterDel)
 			if err != nil {
@@ -186,7 +193,8 @@ func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Con
 	refresh_token, err_refresh_token := utils.GenerateRefreshToken(expRefreshToken, &foundUser, os.Getenv("REFRESH_TOKEN_SECRET"))
 	helper.ErrorPanic(err_refresh_token)
 	// set cookie
-	c.SetCookie("access_token", access_token, 3600, "/", "localhost", false, true)
+	c.SetCookie("access_token", access_token, 3600, "/", c.Request.Host, false, true)
+	c.SetCookie("refresh_token", refresh_token, 3600, "/", c.Request.Host, false, true)
 	// cap nhat hoac them token neu chua ton tai
 	filterDeviced := bson.D{{"deviced", deviced}}
 	updateToken := bson.D{{"$set", bson.D{
@@ -411,32 +419,41 @@ func (a *UserImplementService) MakeUserForDeletion(userId string, redisClient *r
 	return nil
 }
 func (a *UserImplementService) DeleteUser(userId string) error {
-	filter := bson.D{{"_id", utils.ConvertStringToObjectId(userId)}}
-	//res, err := a.usercollection.DeleteOne(a.ctx, filter)
-	//return int(res.DeletedCount), err
-	// update lai thoi gian xoa va trang thai
-	deleteAt := time.Now()
-	update := bson.M{
-		"$set": bson.M{
-			"depending_delete": constant.ISDEPENDING,
-			"delete_at":        deleteAt,
-		},
+	fmt.Println("user id need convert to ObjectID ---> ", userId)
+	userIdObj := utils.ConvertStringToObjectId(userId)
+	fmt.Println("user ID converted ---> ", userIdObj)
+	filter := bson.M{"_id": userIdObj}
+	fmt.Println("filter --> ", filter)
+	//deleteAt := time.Now()
+	updateData := bson.D{
+		{"$set", bson.D{
+			{"depending_delete", constant.ISDEPENDING},
+			{"delete_at", time.Now()},
+		}},
 	}
-	var userDelete Models.UserModel
-	err := a.usercollection.FindOneAndUpdate(a.ctx, filter, update, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&userDelete)
+	//var userDelete Models.UserModel
+	_, err := a.usercollection.UpdateOne(a.ctx, filter, updateData)
 	if err != nil {
+		fmt.Println("Running err 1")
 		return err
 	}
-	//Dat key trong Redis voi TTL 1 tieng
-	duration, err := strconv.Atoi(os.Getenv("REDIS_DURATION"))
-	if err != nil {
-		return errors.New("Xảy ra lỗi trong quá trình chuyển string sang int")
-	}
-	err = utils.SetCacheInterface(userId, userDelete, duration)
-	if err != nil {
-		return err
-	}
-	fmt.Println("user delete ---> ", userDelete)
+	//fmt.Println("user delete ---> ", res.UpsertedID)
+	//filter = bson.M{"_id": res.UpsertedID}
+	//err = a.usercollection.FindOne(a.ctx, filter).Decode(&userDelete)
+	//if err != nil {
+	//	fmt.Println("Running err 2")
+	//	return err
+	//}
+	//fmt.Println("Data user deleted ----> ", userDelete)
+	////Dat key trong Redis voi TTL 10p
+	//duration, err := strconv.Atoi(os.Getenv("REDIS_DURATION"))
+	//if err != nil {
+	//	return errors.New("Xảy ra lỗi trong quá trình chuyển string sang int")
+	//}
+	//err = utils.SetCacheInterface(userId, userDelete, duration)
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }
 func (a *UserImplementService) ChangePassword(userId string, passwordInput *Models.ChangePasswordInput) error {

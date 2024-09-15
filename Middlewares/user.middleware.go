@@ -18,19 +18,31 @@ var ctx context.Context
 
 func AuthValidationBearerMiddleware(c *gin.Context) {
 	var ctx, _ = context.WithTimeout(context.Background(), 100*time.Second)
-	authHeader := c.GetHeader("Authorization")
+	tokenCollection := config.GetMongoDB().Collection("Tokens")
+	//authHeader := c.GetHeader("Authorization")
+	var token = c.Request.Header.Get("Authorization")
 	deviced := c.Request.Header.Get("User-Agent")
-	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})
-		common.NewErrorResponse(c, http.StatusUnauthorized, "Vui lòng truyền token!", "")
-		c.Abort()
-		return
+	if token == "" {
+		cookie, _ := c.Request.Cookie("access_token")
+		token = cookie.String()
+		if len(token) > 6 {
+			token = token[6:]
+		}
+		if token == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"code":    http.StatusUnauthorized,
+				"message": "Hết phiên đăng nhập",
+			})
+			return
+		}
 	}
-	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+	if len(token) > 6 {
+		token = token[6:]
+	}
+	tokenString := strings.TrimSpace(token)
 	accessSecretKey := os.Getenv("ACCESS_TOKEN_SECRET")
 	accessSecretKeyByte := []byte(accessSecretKey)
 	claims, err := utils.DecodedToken(tokenString, accessSecretKeyByte)
-	tokenCollection := config.GetMongoDB().Collection("Tokens")
 	filterToken := bson.M{"access_token": tokenString}
 	var tokenRes Models.TokenModel
 	err = tokenCollection.FindOne(ctx, filterToken).Decode(&tokenRes)
