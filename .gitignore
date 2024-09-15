@@ -12,6 +12,8 @@ vendor/
 
 ##ENV
 *.env
+.env.development
+.env.production
 tmp/
 uploads/
 #############################
