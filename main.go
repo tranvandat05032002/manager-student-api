@@ -81,12 +81,13 @@ func InitializeConfig() {
 		os.Mkdir("uploads/images", os.ModePerm)
 	}
 	server = gin.Default()
-	//config TrustedProxies and IPV6
+	//config TrustedProxies
 	server.SetTrustedProxies([]string{
-		os.Getenv("HOST"),
-		"192.168.1.10",                          // Địa chỉ IPv4 proxy tin cậy
-		"::1",                                   // Địa chỉ IPv6 localhost
-		"2405:4802:6563:140:10b3:beb9:c910:16e", // Địa chỉ IPv6 proxy tin cậy
+		"127.0.0.1",     //Ip localhost V4
+		"::1",           // Ip Localhost V6
+		"0.0.0.0",       // Ip cache or server
+		"103.214.9.124", // Ip load balancer
+		"192.168.1.10",  // Ip network
 	})
 	//config cors
 	server.Use(cors.New(cors.Config{
