@@ -103,12 +103,7 @@ func InitializeConfig() {
 }
 func InitializeDatabase() {
 	ctx = context.TODO()
-	mongoCon, err := config.Connect(ctx)
-	if err != nil {
-		fmt.Println("Error mongoDB --> ", err.Error())
-		return
-	}
-	defer config.CloseMongoDB()
+	mongoCon, _ := config.Connect(ctx)
 	// Users collection
 	userco = mongoCon.Collection("Users")
 	index_name_user := "name_text"
@@ -176,13 +171,18 @@ func InitializeDatabase() {
 }
 func main() {
 	InitializeConfig()
+	InitializeDatabase()
+	defer func(mongoClient *mongo.Client, ctx context.Context) {
+		if err := mongoClient.Disconnect(ctx); err != nil {
+			log.Println("Error disconnecting MongoDB client: ---> ", err)
+		}
+	}(mongoClient, ctx)
 	err := utils.InitCache()
 	fmt.Println("Error Redis ---> ", err)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	InitializeDatabase()
 	//Document
 	server.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	//REST API
