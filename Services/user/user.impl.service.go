@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -120,7 +121,7 @@ func (a *UserImplementService) DeleteOTPExp() {
 	}
 }
 func (a *UserImplementService) CheckAndDeleteUsers() {
-	sizeKey := len(utils.GetKeys("token"))
+	sizeKey := len(utils.GetKeys("user"))
 	if sizeKey == 0 {
 		return
 	}
@@ -431,29 +432,28 @@ func (a *UserImplementService) DeleteUser(userId string) error {
 			{"delete_at", time.Now()},
 		}},
 	}
-	//var userDelete Models.UserModel
+	var userDelete Models.UserModel
 	_, err := a.usercollection.UpdateOne(a.ctx, filter, updateData)
 	if err != nil {
 		fmt.Println("Running err 1")
 		return err
 	}
 	//fmt.Println("user delete ---> ", res.UpsertedID)
-	//filter = bson.M{"_id": res.UpsertedID}
-	//err = a.usercollection.FindOne(a.ctx, filter).Decode(&userDelete)
-	//if err != nil {
-	//	fmt.Println("Running err 2")
-	//	return err
-	//}
-	//fmt.Println("Data user deleted ----> ", userDelete)
-	////Dat key trong Redis voi TTL 10p
-	//duration, err := strconv.Atoi(os.Getenv("REDIS_DURATION"))
-	//if err != nil {
-	//	return errors.New("Xảy ra lỗi trong quá trình chuyển string sang int")
-	//}
-	//err = utils.SetCacheInterface(userId, userDelete, duration)
-	//if err != nil {
-	//	return err
-	//}
+	filter = bson.M{"_id": userId}
+	err = a.usercollection.FindOne(a.ctx, filter).Decode(&userDelete)
+	if err != nil {
+		return err
+	}
+	//Dat key trong Redis voi TTL 10p
+	duration, err := strconv.Atoi(os.Getenv("REDIS_DURATION"))
+	if err != nil {
+		return errors.New("Xảy ra lỗi trong quá trình chuyển string sang int")
+	}
+	keyUser := "user:" + userId
+	err = utils.SetCacheInterface(keyUser, userDelete, duration)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 func (a *UserImplementService) ChangePassword(userId string, passwordInput *Models.ChangePasswordInput) error {
@@ -702,7 +702,6 @@ func (a *UserImplementService) GetListUserDependingDeletion(page, limit int) ([]
 }
 func (a *UserImplementService) RestoreUser(userId primitive.ObjectID) error {
 	// Xóa user trong redis
-	fmt.Println("userId --> ", userId.Hex())
 	err := utils.DelCache(userId.Hex())
 	if err != nil {
 		return err

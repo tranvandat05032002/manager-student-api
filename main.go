@@ -196,7 +196,6 @@ func main() {
 		}
 	}(mongoClient, ctx)
 	err := utils.InitCache()
-	fmt.Println("Error Redis ---> ", err)
 	if err != nil {
 		fmt.Println(err)
 		return

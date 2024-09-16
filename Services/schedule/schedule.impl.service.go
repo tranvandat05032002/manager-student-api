@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ScheduleImplementService struct {
@@ -64,4 +65,59 @@ func (a *ScheduleImplementService) CreateSchedule(scheduleInput Models.ScheduleM
 		return errors.New("Tạo lịch học thất bại")
 	}
 	return nil
+}
+func (a *ScheduleImplementService) GetScheduleDetails(scheduleId primitive.ObjectID) (*Models.ScheduleModel, error) {
+	var schedule *Models.ScheduleModel
+	query := bson.M{"_id": scheduleId}
+	err := a.schedulecollection.FindOne(a.ctx, query).Decode(&schedule)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("no document found")
+		}
+		return nil, err
+	}
+	return schedule, err
+}
+func (a *ScheduleImplementService) UpdateSchedule(scheduleId primitive.ObjectID, scheduleUpdate Models.ScheduleModel) error {
+	timeHoChiMinhLocal, _ := utils.GetCurrentTimeInLocal("Asia/Ho_Chi_Minh")
+	filter := bson.M{
+		"_id": scheduleId,
+	}
+	scheduleData := utils.BuildUpdateQuery(scheduleUpdate)
+	scheduleData["updated_at"] = timeHoChiMinhLocal
+	scheduleDataUpdate := bson.M{"$set": scheduleData}
+	_, err := a.schedulecollection.UpdateOne(a.ctx, filter, scheduleDataUpdate)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *ScheduleImplementService) GetAllSchedule(page, limit int) ([]Models.ScheduleModel, int, error) {
+	skip := limit * (page - 1)
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
+	cur, err := a.schedulecollection.Find(a.ctx, bson.M{}, opts)
+	total, err := a.schedulecollection.CountDocuments(a.ctx, bson.M{})
+	defer cur.Close(a.ctx)
+	var schedules Models.Schedules
+	for cur.Next(a.ctx) {
+		var schedule Models.ScheduleModel
+		err := cur.Decode(&schedule)
+		if err != nil {
+			return nil, 0, err
+		}
+		schedules = append(schedules, schedule)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, 0, err
+	}
+	return schedules, int(total), err
+}
+func (a *ScheduleImplementService) DeleteSchedule(scheduleId primitive.ObjectID) (int, error) {
+	filter := bson.M{"_id": scheduleId}
+	res, err := a.schedulecollection.DeleteOne(a.ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+	return int(res.DeletedCount), err
 }
