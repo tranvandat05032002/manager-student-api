@@ -111,7 +111,6 @@ func (a *UserImplementService) DeleteTokenExp() {
 	if err != nil {
 		log.Printf("Error deleting expired tokens: %v", err)
 	}
-	fmt.Println("Cleaned expired tokens ----------> at", expiryThreshold)
 }
 func (a *UserImplementService) DeleteOTPExp() {
 	expiryThreshold := time.Now().UTC()
