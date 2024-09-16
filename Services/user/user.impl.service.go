@@ -170,12 +170,12 @@ func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Con
 	err := a.usercollection.FindOne(ctx, bson.M{"email": authInput.Email}).Decode(&foundUser)
 	defer cancel()
 	if err != nil {
-		common.NewErrorResponse(c, http.StatusUnauthorized, common.ErrorEmailOrPassword, err.Error())
+		common.NewErrorResponse(c, http.StatusNotFound, common.ErrorEmailOrPassword, err.Error())
 		return
 	}
 	passwordIsValid := utils.CheckPasswordHash(authInput.Password, foundUser.Password)
 	if passwordIsValid != true {
-		common.NewErrorResponse(c, http.StatusUnauthorized, common.ErrorPassword, "Mật khẩu không hợp lệ")
+		common.NewErrorResponse(c, http.StatusNotFound, common.ErrorPassword, "Mật khẩu không hợp lệ")
 		return
 	}
 	defer cancel()
@@ -420,27 +420,23 @@ func (a *UserImplementService) MakeUserForDeletion(userId string, redisClient *r
 	return nil
 }
 func (a *UserImplementService) DeleteUser(userId string) error {
-	fmt.Println("user id need convert to ObjectID ---> ", userId)
 	userIdObj := utils.ConvertStringToObjectId(userId)
-	fmt.Println("user ID converted ---> ", userIdObj)
 	filter := bson.M{"_id": userIdObj}
-	fmt.Println("filter --> ", filter)
-	//deleteAt := time.Now()
+	data := bson.D{
+		{"depending_delete", constant.ISDEPENDING},
+		{"delete_at", time.Now()},
+	}
 	updateData := bson.D{
-		{"$set", bson.D{
-			{"depending_delete", constant.ISDEPENDING},
-			{"delete_at", time.Now()},
-		}},
+		{"$set", data},
 	}
 	var userDelete Models.UserModel
 	_, err := a.usercollection.UpdateOne(a.ctx, filter, updateData)
 	if err != nil {
-		fmt.Println("Running err 1")
 		return err
 	}
-	//fmt.Println("user delete ---> ", res.UpsertedID)
 	filter = bson.M{"_id": userId}
 	err = a.usercollection.FindOne(a.ctx, filter).Decode(&userDelete)
+	fmt.Println("User delete --> ", userDelete)
 	if err != nil {
 		return err
 	}

@@ -47,11 +47,6 @@ func AuthValidationBearerMiddleware(c *gin.Context) {
 	var tokenRes Models.TokenModel
 	err = tokenCollection.FindOne(ctx, filterToken).Decode(&tokenRes)
 	if err != nil {
-		common.NewErrorResponse(c, http.StatusUnauthorized, "Không tìm thấy token!", err.Error())
-		c.Abort()
-		return
-	}
-	if err != nil {
 		common.NewErrorResponse(c, http.StatusUnauthorized, "Decoded thất bại!", err.Error())
 		c.Abort()
 		return

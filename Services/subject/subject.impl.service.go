@@ -74,6 +74,7 @@ func (a *SubjectImplementService) UpdateSubject(id primitive.ObjectID, subjectUp
 	}
 	subjectData := utils.BuildUpdateQuery(subjectUpdate)
 	subjectData["updated_at"] = timeHoChiMinhLocal
+	subjectData["term_id"] = subjectUpdate.TermID
 	subjectDataUpdate := bson.M{"$set": subjectData}
 	var subjectRes Models.SubjectModel
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
@@ -125,9 +126,9 @@ func (a *SubjectImplementService) GetSubjectDetails(id primitive.ObjectID) (*Mod
 	return subject, err
 }
 
-func (a *SubjectImplementService) SearchSubject(subjectName string, page, limit int) ([] Models.SubjectModel, int, error) {
+func (a *SubjectImplementService) SearchSubject(subjectName string, page, limit int) ([]Models.SubjectModel, int, error) {
 	skip := (page - 1) * limit
-	totalCount, err := a.subjectcollection.CountDocuments(a.ctx, bson.D{{"$text", bson.D{{"$search",  subjectName}}}})
+	totalCount, err := a.subjectcollection.CountDocuments(a.ctx, bson.D{{"$text", bson.D{{"$search", subjectName}}}})
 	pipeline := bson.A{
 		bson.D{{"$match", bson.D{{"$text", bson.D{{"$search", subjectName}}}}}},
 		bson.D{{"$skip", skip}},
