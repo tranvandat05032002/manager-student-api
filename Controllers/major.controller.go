@@ -1,128 +1,149 @@
 package Controllers
 
 import (
-	"fmt"
-	"gin-gonic-gom/Middlewares"
-	"gin-gonic-gom/Models"
-	"gin-gonic-gom/Services/major"
-	"gin-gonic-gom/common"
+	"gin-gonic-gom/Collections"
+	"gin-gonic-gom/Common"
+	"gin-gonic-gom/config"
 	"gin-gonic-gom/utils"
-	"net/http"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"go.mongodb.org/mongo-driver/mongo"
+	"net/http"
 )
 
-type MajorController struct {
-	MajorService major.MajorService
+type MajorRequest struct {
+	MajorId   string `json:"major_id" bson:"-"`
+	MajorName string `json:"major_name" bson:"-"`
 }
 
-func NewMajor(majorService major.MajorService) MajorController {
-	return MajorController{
-		MajorService: majorService,
-	}
-}
-func (majorController *MajorController) CreateMajorController(ctx *gin.Context) {
-	var major Models.MajorModel
-	if err := ctx.ShouldBindJSON(&major); err != nil {
+func PostMajor(c *gin.Context) {
+	var request MajorRequest
+	if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+		//Logger
+		//Response
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	err := majorController.MajorService.CreateMajor(&major)
+	var (
+		major Collections.MajorModel
+		DB    = config.GetMongoDB()
+		err   error
+		//Other config
+		//.......
+	)
+	res, errCheckMajor := major.CheckExist(DB, request.MajorId, request.MajorName)
+	if errCheckMajor != nil {
+		Common.NewErrorResponse(c, http.StatusInternalServerError, "Lỗi hệ thống! ", nil)
+		return
+	}
+	if res {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Ngành đã tồn tại!", nil)
+		return
+	}
+	err = major.Create(DB)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorAddDataMessage, err.Error())
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Lỗi hệ thống!", nil)
 		return
 	}
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "Tạo ngành thành công!!!", nil))
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Thêm dữ liệu thành công!", nil))
 }
-func (majorController *MajorController) UpdateMajorController(ctx *gin.Context) {
-	var majorUpdateReq Models.MajorUpdateReq
-	id := ctx.Param("id")
-	if err := ctx.ShouldBindJSON(&majorUpdateReq); err != nil {
+
+func GetAllMajors(c *gin.Context) {
+	var (
+		major Collections.MajorModel
+		DB    = config.GetMongoDB()
+		err   error
+		//Other config
+		//.......
+	)
+	page, limit, skip := utils.Pagination(c)
+	res, total, err := major.Find(DB, limit, skip)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách ngành thành công", res, total, page, limit))
+}
+func UpdateMajor(c *gin.Context) {
+	var request MajorRequest
+	id := c.Param("id")
+	var (
+		major Collections.MajorModel
+		DB    = config.GetMongoDB()
+		err   error
+		//Other config
+		//.......
+	)
+	if err = c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+		//Logger
+		//Response
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	res, err := majorController.MajorService.UpdateMajor(utils.ConvertStringToObjectId(id), &majorUpdateReq)
+	err = major.Update(DB, utils.ConvertStringToObjectId(id), request)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Cập nhật ngành thất bại!", err.Error())
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Cập nhật ngành thất bại!", err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "Cập nhật ngành thành công!", res))
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Cập nhật ngành thành công!", nil))
 }
-func (majorController *MajorController) GetAllMajorController(ctx *gin.Context) {
-	limitStr := ctx.Query("limit")
-	pageStr := ctx.Query("page")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 {
-		limit = 5
-	}
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page <= 0 {
-		page = 1
-	}
-	majors, total, err := majorController.MajorService.GetAllMajor(page, limit)
+
+func GetDetailMajor(c *gin.Context) {
+	id := c.Param("id")
+	var (
+		major Collections.MajorModel
+		DB    = config.GetMongoDB()
+		err   error
+		//Other config
+		//.......
+	)
+	res, err := major.FindByID(DB, utils.ConvertStringToObjectId(id))
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Ngành không tồn tại!", err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Lấy danh sách ngành thành công", majors, total, page, limit))
-}
-func (majorController *MajorController) DeleteMajorController(ctx *gin.Context) {
-	majorId := ctx.Param("id")
-	res, err := majorController.MajorService.DeleteMajor(utils.ConvertStringToObjectId(majorId))
-	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Xóa ngành không thành công!", err.Error())
-		return
-	}
-	if res < 1 {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Ngành không tồn tại!", "")
-		return
-	}
-	message := fmt.Sprintf("Xóa ngành thành công")
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, message, nil))
-}
-func (majorController *MajorController) GetMajorDetailsController(ctx *gin.Context) {
-	majorId := ctx.Param("id")
-	major, err := majorController.MajorService.GetMajorDetails(utils.ConvertStringToObjectId(majorId))
-	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Ngành không tồn tại!", err.Error())
-		return
-	}
-	ctx.JSON(
+	c.JSON(
 		http.StatusOK,
-		common.SimpleSuccessResponse(http.StatusOK, "Lấy thông tin ngành thành công!", major),
+		Common.SimpleSuccessResponse(http.StatusOK, "Lấy thông tin ngành thành công!", res),
 	)
 }
-func (majorController *MajorController) SearchMajorController(ctx *gin.Context) {
-	majorNameQuery := ctx.Query("major_name")
-	limitStr := ctx.Query("limit")
-	pageStr := ctx.Query("page")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 {
-		limit = 5
+func DeleteMajor(c *gin.Context) {
+	id := c.Param("id")
+	var (
+		major Collections.MajorModel
+		DB    = config.GetMongoDB()
+		err   error
+		//Other config
+		//.......
+	)
+	_, err = major.FindByID(DB, utils.ConvertStringToObjectId(id))
+	if err.Error() == mongo.ErrNoDocuments.Error() {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Không tìm thấy ngành!", nil)
+		return
 	}
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page <= 0 {
-		page = 1
+	err = major.Delete(DB, utils.ConvertStringToObjectId(id))
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Xóa ngành không thành công!", nil)
+		return
 	}
-	nameMajor := string(majorNameQuery)
-	majors, total, _ := majorController.MajorService.SearchMajor(nameMajor, page, limit)
-	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Tìm kiếm ngành thành công!!", majors, total, page, limit))
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Xóa ngành thành công", nil))
 }
-func (majorController *MajorController) RegisterMajorRoutes(rg *gin.RouterGroup) {
-	majoradminroute := rg.Group("/admin/major")
-	{
-		majoradminroute.Use(Middlewares.AuthValidationBearerMiddleware)
-		majoradminroute.Use(Middlewares.RoleMiddleware("admin"))
-		{
-			majoradminroute.GET("/details/:id", majorController.GetMajorDetailsController)
-			majoradminroute.GET("/all", majorController.GetAllMajorController)
-			majoradminroute.POST("/add", majorController.CreateMajorController)
-			majoradminroute.GET("/search", majorController.SearchMajorController)
-			majoradminroute.DELETE("/:id", majorController.DeleteMajorController)
-			majoradminroute.PATCH("/:id", majorController.UpdateMajorController)
-		}
+func SearchMajor(c *gin.Context) {
+	var (
+		major Collections.MajorModel
+		err   error
+		DB    = config.GetMongoDB()
+		//Other config
+		//.......
+	)
+	query := c.Query("major_name")
+	page, limit, skip := utils.Pagination(c)
+	res, total, err := major.Search(DB, query, skip, limit)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Tìm kiếm xảy ra lỗi!", err.Error())
+		return
 	}
+	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Tìm kiếm ngành thành công!!", res, total, page, limit))
 }

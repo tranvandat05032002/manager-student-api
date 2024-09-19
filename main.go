@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"gin-gonic-gom/Controllers"
+	"gin-gonic-gom/Controllers/jobs"
+	"gin-gonic-gom/Routes"
 	"gin-gonic-gom/Services/major"
 	"gin-gonic-gom/Services/media"
 	"gin-gonic-gom/Services/schedule"
@@ -22,7 +24,6 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/robfig/cron/v3"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.mongodb.org/mongo-driver/bson"
@@ -65,7 +66,7 @@ var (
 	validate     *validator.Validate
 )
 
-func createIndex(collection *mongo.Collection, indexName string, indexType interface{}) mongo.IndexModel {
+func createIndex(indexName string, indexType interface{}) mongo.IndexModel {
 	if indexType == "text" {
 		indexModelText := mongo.IndexModel{Keys: bson.D{{indexName, indexType}}, Options: options.Index().SetDefaultLanguage("none")}
 		return indexModelText
@@ -78,7 +79,6 @@ func InitializeConfig() {
 	env := os.Getenv("ENV")
 	if env == "production" {
 		err := godotenv.Load(".env.production")
-		fmt.Println("Data --> ", os.Getenv("ENV"))
 		if err != nil {
 			log.Fatalf("Error loading .env.production file")
 		}
@@ -93,14 +93,6 @@ func InitializeConfig() {
 		os.Mkdir("uploads/images", os.ModePerm)
 	}
 	server = gin.Default()
-	//config TrustedProxies
-	server.SetTrustedProxies([]string{
-		"127.0.0.1",     //Ip localhost V4
-		"::1",           // Ip Localhost V6
-		"0.0.0.0",       // Ip cache or server
-		"103.214.9.124", // Ip load balancer
-		"192.168.1.10",  // Ip network
-	})
 	//config cors
 	server.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"}, //client
@@ -119,16 +111,19 @@ func InitializeDatabase() {
 	mongoCon, _ := config.Connect(ctx)
 	// Users collection
 	userco = mongoCon.Collection("Users")
-	index_name_user := "name_text"
-	indexUserExists, errIndex := utils.CheckIndexExists(ctx, userco, index_name_user)
+	indexNameUser := "name_text"
+	indexUserExists, errIndex := utils.CheckIndexExists(ctx, userco, indexNameUser)
 	if errIndex != nil {
 		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
 	}
 	if !indexUserExists {
-		indexUserModel := createIndex(userco, "name", "text")
-		userco.Indexes().CreateOne(context.TODO(), indexUserModel)
+		indexUserModel := createIndex("name", "text")
+		_, err := userco.Indexes().CreateOne(context.TODO(), indexUserModel)
+		if err != nil {
+			fmt.Println("Lỗi trong quá trình tạo index collection Users")
+		}
 	} else {
-		fmt.Println("Index already exists:", index_name_user)
+		fmt.Println("Index already exists:", indexNameUser)
 	}
 	// Token collection
 	tokenco = mongoCon.Collection("Tokens")
@@ -137,18 +132,21 @@ func InitializeDatabase() {
 	//Media collection
 	mediaco = mongoCon.Collection("Medias")
 	// Major collection
-	majorco = mongoCon.Collection("Majors")
-	indexMajorName := "major_name_text"
-	indexMajorExists, errIndex := utils.CheckIndexExists(ctx, majorco, indexMajorName)
-	if errIndex != nil {
-		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
-	}
-	if !indexMajorExists {
-		indexMajorModel := createIndex(majorco, "major_name", "text")
-		majorco.Indexes().CreateOne(context.TODO(), indexMajorModel)
-	} else {
-		fmt.Println("Index already exists:", indexMajorName)
-	}
+	//majorco = mongoCon.Collection("Majors")
+	//indexMajorName := "major_name_text"
+	//indexMajorExists, errIndex := utils.CheckIndexExists(ctx, majorco, indexMajorName)
+	//if errIndex != nil {
+	//	fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
+	//}
+	//if !indexMajorExists {
+	//	indexMajorModel := createIndex("major_name", "text")
+	//	_, err := majorco.Indexes().CreateOne(context.TODO(), indexMajorModel)
+	//	if err != nil {
+	//		fmt.Println("Lỗi trong quá trình tạo index collection Major")
+	//	}
+	//} else {
+	//	fmt.Println("Index already exists:", indexMajorName)
+	//}
 	// Subject collection
 	subjectco = mongoCon.Collection("Subjects")
 	indexSubjectName := "subject_name_text"
@@ -157,8 +155,11 @@ func InitializeDatabase() {
 		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
 	}
 	if !indexSubjectExists {
-		indexSubjectModel := createIndex(subjectco, "subject_name", "text")
-		subjectco.Indexes().CreateOne(context.TODO(), indexSubjectModel)
+		indexSubjectModel := createIndex("subject_name", "text")
+		_, err := subjectco.Indexes().CreateOne(context.TODO(), indexSubjectModel)
+		if err != nil {
+			fmt.Println("Lỗi trong quá trình tạo index collection Subjects")
+		}
 	} else {
 		fmt.Println("Index already exists:", indexSubjectName)
 	}
@@ -195,35 +196,24 @@ func main() {
 			log.Println("Error disconnecting MongoDB client: ---> ", err)
 		}
 	}(mongoClient, ctx)
-	err := utils.InitCache()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	//err := utils.InitCache()
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return
+	//}
 	//Document
 	server.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	//REST API
-	basepath := server.Group("/v1")
-	uc.RegisterUserRoutes(basepath)
-	mc.RegisterMediaRoutes(basepath)
-	mjc.RegisterMajorRoutes(basepath)
-	subc.RegisterSubjectRoutes(basepath)
-	termc.RegisterTermRoutes(basepath)
-	statisticalc.RegisterStatisticalRoutes(basepath)
-	schedulec.RegisterScheduleRoutes(basepath)
-	loc, _ := time.LoadLocation("Asia/Ho_Chi_Minh")
-	c := cron.New(cron.WithLocation(loc))
-	// 4 giờ sáng mỗi ngày thì cron job sẽ hoạt động để xóa token/otp hết hạn
-	if _, err := c.AddFunc("0 4 * * *", us.DeleteTokenExp); err != nil {
-		log.Fatalf("Error adding cron job delete Token: %v", err)
-	}
-	if _, errOTP := c.AddFunc("0 4 * * *", us.DeleteOTPExp); errOTP != nil {
-		log.Fatalf("Error adding cron job delete OTP: %v", errOTP)
-	}
-	if _, errDelUser := c.AddFunc("@every 1m", us.CheckAndDeleteUsers); errDelUser != nil {
-		log.Fatalf("Error adding cron job delete User: %v", errDelUser)
-	}
-	c.Start()
+	basepath := server.Group("/v1/api")
+	Routes.Router(basepath)
+	//uc.RegisterAuthRoutes(basepath)
+	//mc.RegisterMediaRoutes(basepath)
+	//mjc.RegisterMajorRoutes(basepath)
+	//subc.RegisterSubjectRoutes(basepath)
+	//termc.RegisterTermRoutes(basepath)
+	//statisticalc.RegisterStatisticalRoutes(basepath)
+	//schedulec.RegisterScheduleRoutes(basepath)
+	jobs.JobRunner(us)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "4000" // Giá trị mặc định nếu không có biến môi trường PORT

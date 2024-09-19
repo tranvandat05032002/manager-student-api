@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"reflect"
 	"time"
 
@@ -114,20 +115,24 @@ func ConvertISOToDate(isoString string) (string, error) {
 }
 
 func CheckIndexExists(ctx context.Context, collection *mongo.Collection, indexName string) (bool, error) {
-    indexes, err := collection.Indexes().List(ctx)
-    if err != nil {
-        return false, err
-    }
-    defer indexes.Close(ctx)
+	indexes, err := collection.Indexes().List(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer indexes.Close(ctx)
 
-    for indexes.Next(ctx) {
-        var index bson.M
-        if err := indexes.Decode(&index); err != nil {
-            return false, err
-        }
-        if name, ok := index["name"].(string); ok && name == indexName {
-            return true, nil
-        }
-    }
-    return false, nil
+	for indexes.Next(ctx) {
+		var index bson.M
+		if err := indexes.Decode(&index); err != nil {
+			return false, err
+		}
+		if name, ok := index["name"].(string); ok && name == indexName {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+func GeneratorURLImage(ctx *gin.Context, fileNameExt string) string {
+	formatURL := fmt.Sprintf("%s//"+ctx.Request.Host+"/static/images/%s", "http:", fileNameExt)
+	return formatURL
 }
