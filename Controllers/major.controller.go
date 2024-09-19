@@ -1,6 +1,7 @@
 package Controllers
 
 import (
+	"fmt"
 	"gin-gonic-gom/Collections"
 	"gin-gonic-gom/Common"
 	"gin-gonic-gom/config"
@@ -11,28 +12,23 @@ import (
 	"net/http"
 )
 
-type MajorRequest struct {
-	MajorId   string `json:"major_id" bson:"-"`
-	MajorName string `json:"major_name" bson:"-"`
-}
-
-func PostMajor(c *gin.Context) {
-	var request MajorRequest
-	if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+func CreateMajor(c *gin.Context) {
+	entry := Collections.MajorModel{}
+	var (
+		DB  = config.GetMongoDB()
+		err error
+		//Other config
+		//.......
+	)
+	if err = c.ShouldBindBodyWith(&entry, binding.JSON); err != nil {
 		//Logger
 		//Response
 		errorMessages := utils.GetErrorMessagesResponse(err)
 		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	var (
-		major Collections.MajorModel
-		DB    = config.GetMongoDB()
-		err   error
-		//Other config
-		//.......
-	)
-	res, errCheckMajor := major.CheckExist(DB, request.MajorId, request.MajorName)
+	fmt.Println("Data --> ", entry)
+	res, errCheckMajor := entry.CheckExist(DB, entry.MajorId, entry.MajorName)
 	if errCheckMajor != nil {
 		Common.NewErrorResponse(c, http.StatusInternalServerError, "Lỗi hệ thống! ", nil)
 		return
@@ -41,7 +37,7 @@ func PostMajor(c *gin.Context) {
 		Common.NewErrorResponse(c, http.StatusBadRequest, "Ngành đã tồn tại!", nil)
 		return
 	}
-	err = major.Create(DB)
+	err = entry.Create(DB)
 	if err != nil {
 		Common.NewErrorResponse(c, http.StatusBadRequest, "Lỗi hệ thống!", nil)
 		return
@@ -66,7 +62,7 @@ func GetAllMajors(c *gin.Context) {
 	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách ngành thành công", res, total, page, limit))
 }
 func UpdateMajor(c *gin.Context) {
-	var request MajorRequest
+	request := Collections.MajorModel{}
 	id := c.Param("id")
 	var (
 		major Collections.MajorModel
@@ -119,7 +115,7 @@ func DeleteMajor(c *gin.Context) {
 		//.......
 	)
 	_, err = major.FindByID(DB, utils.ConvertStringToObjectId(id))
-	if err.Error() == mongo.ErrNoDocuments.Error() {
+	if err != nil && err.Error() == mongo.ErrNoDocuments.Error() {
 		Common.NewErrorResponse(c, http.StatusBadRequest, "Không tìm thấy ngành!", nil)
 		return
 	}
