@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gin-gonic-gom/Common"
 	"gin-gonic-gom/Models"
-	"gin-gonic-gom/common"
 	"gin-gonic-gom/constant"
 	"gin-gonic-gom/helper"
 	"gin-gonic-gom/utils"
@@ -13,7 +13,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -169,22 +168,22 @@ func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Con
 	err := a.usercollection.FindOne(ctx, bson.M{"email": authInput.Email}).Decode(&foundUser)
 	defer cancel()
 	if err != nil {
-		common.NewErrorResponse(c, http.StatusNotFound, common.ErrorEmailOrPassword, err.Error())
+		Common.NewErrorResponse(c, http.StatusNotFound, Common.ErrorEmailOrPassword, err.Error())
 		return
 	}
 	passwordIsValid := utils.CheckPasswordHash(authInput.Password, foundUser.Password)
 	if passwordIsValid != true {
-		common.NewErrorResponse(c, http.StatusNotFound, common.ErrorPassword, "Mật khẩu không hợp lệ")
+		Common.NewErrorResponse(c, http.StatusNotFound, Common.ErrorPassword, "Mật khẩu không hợp lệ")
 		return
 	}
 	defer cancel()
 	if err != nil {
-		common.NewErrorResponse(c, http.StatusInternalServerError, common.ErrorInternetServer, err.Error())
+		Common.NewErrorResponse(c, http.StatusInternalServerError, Common.ErrorInternetServer, err.Error())
 		return
 	}
 	// kiem tra xem tai khoan bi xoa chua
 	if foundUser.DependingDelete {
-		common.NewErrorResponse(c, http.StatusForbidden, "Tài khoản không tồn tại trong hệ thống", nil)
+		Common.NewErrorResponse(c, http.StatusForbidden, "Tài khoản không tồn tại trong hệ thống", nil)
 		return
 	}
 	// Generator token and Deviced
@@ -213,14 +212,14 @@ func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Con
 
 	cursor, err := a.tokencollection.Find(ctx, filter, opts)
 	if err != nil {
-		common.NewErrorResponse(c, http.StatusNotFound, common.ErrorFindUser, err.Error())
+		Common.NewErrorResponse(c, http.StatusNotFound, Common.ErrorFindUser, err.Error())
 		return
 	}
 	defer cursor.Close(ctx)
 
 	var tokens []Models.TokenModel
 	if err := cursor.All(ctx, &tokens); err != nil {
-		common.NewErrorResponse(c, http.StatusInternalServerError, common.ErrorInternetServer, err.Error())
+		Common.NewErrorResponse(c, http.StatusInternalServerError, Common.ErrorInternetServer, err.Error())
 		return
 	}
 	numDevices := len(tokens)
@@ -234,7 +233,7 @@ func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Con
 			}
 			_, err := a.tokencollection.DeleteMany(ctx, bson.M{"_id": bson.M{"$in": idsToDelete}})
 			if err != nil {
-				common.NewErrorResponse(c, http.StatusBadRequest, common.ErrorDeleteTokenData, err.Error())
+				Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorDeleteTokenData, err.Error())
 				return
 			}
 		}
@@ -243,7 +242,7 @@ func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Con
 		AccessToken:  access_token,
 		RefreshToken: refresh_token,
 	}
-	c.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, common.SuccessLogin, token))
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, Common.SuccessLogin, token))
 }
 func (a *UserImplementService) GetMe(userId, role string) (*Models.UserModel, error) {
 	var account *Models.UserModel
@@ -312,7 +311,6 @@ func (a *UserImplementService) Logout(deviced string, userId primitive.ObjectID)
 func (a *UserImplementService) UpdateMe(userId string, userData *Models.UserUpdate) (*Models.UserModel, error) {
 	filter := bson.M{"_id": utils.ConvertStringToObjectId(userId)}
 	updateFields := bson.M{}
-
 	if userData.Name != "" {
 		updateFields["name"] = userData.Name
 	}
@@ -435,20 +433,19 @@ func (a *UserImplementService) DeleteUser(userId string) error {
 	}
 	filter = bson.M{"_id": userId}
 	err = a.usercollection.FindOne(a.ctx, filter).Decode(&userDelete)
-	fmt.Println("User delete --> ", userDelete)
 	if err != nil {
 		return err
 	}
 	//Dat key trong Redis voi TTL 10p
-	duration, err := strconv.Atoi(os.Getenv("REDIS_DURATION"))
-	if err != nil {
-		return errors.New("Xảy ra lỗi trong quá trình chuyển string sang int")
-	}
-	keyUser := "user:" + userId
-	err = utils.SetCacheInterface(keyUser, userDelete, duration)
-	if err != nil {
-		return err
-	}
+	//duration, err := strconv.Atoi(os.Getenv("REDIS_DURATION"))
+	//if err != nil {
+	//	return errors.New("Xảy ra lỗi trong quá trình chuyển string sang int")
+	//}
+	//keyUser := "user:" + userId
+	//err = utils.SetCacheInterface(keyUser, userDelete, duration)
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }
 func (a *UserImplementService) ChangePassword(userId string, passwordInput *Models.ChangePasswordInput) error {

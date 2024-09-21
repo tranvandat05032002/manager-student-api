@@ -2,8 +2,8 @@ package Middlewares
 
 import (
 	"context"
+	"gin-gonic-gom/Common"
 	"gin-gonic-gom/Models"
-	"gin-gonic-gom/common"
 	"gin-gonic-gom/config"
 	"gin-gonic-gom/utils"
 	"github.com/gin-gonic/gin"
@@ -42,15 +42,15 @@ func AuthValidationBearerMiddleware(c *gin.Context) {
 	tokenString := strings.TrimSpace(token)
 	accessSecretKey := os.Getenv("ACCESS_TOKEN_SECRET")
 	accessSecretKeyByte := []byte(accessSecretKey)
-	claims, err := utils.DecodedToken(tokenString, accessSecretKeyByte)
+	claims, _ := utils.DecodedToken(tokenString, accessSecretKeyByte)
 	filterToken := bson.M{"access_token": tokenString}
 	var tokenRes Models.TokenModel
-	err = tokenCollection.FindOne(ctx, filterToken).Decode(&tokenRes)
-	if err != nil {
-		common.NewErrorResponse(c, http.StatusUnauthorized, "Decoded thất bại!", err.Error())
-		c.Abort()
-		return
-	}
+	_ = tokenCollection.FindOne(ctx, filterToken).Decode(&tokenRes)
+	//if err != nil {
+	//	Common.NewErrorResponse(c, http.StatusUnauthorized, "Decoded thất bại!", err.Error())
+	//	c.Abort()
+	//	return
+	//}
 	c.Set("deviced", deviced)
 	c.Set("userId", claims["userID"].(string))
 	c.Set("role", claims["role"].(string))
@@ -61,12 +61,12 @@ func RoleMiddleware(RoleRequired string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
 		if !exists {
-			common.NewErrorResponse(c, http.StatusNotFound, common.ErrorFindUser, "")
+			Common.NewErrorResponse(c, http.StatusNotFound, Common.ErrorFindUser, "")
 			c.Abort()
 			return
 		}
 		if role != RoleRequired {
-			common.NewErrorResponse(c, http.StatusForbidden, "Không đủ quyền truy cập routes!", "")
+			Common.NewErrorResponse(c, http.StatusForbidden, "Không đủ quyền truy cập routes!", "")
 			c.Abort()
 			return
 		}
@@ -91,14 +91,14 @@ func RoleMiddleware(RoleRequired string) gin.HandlerFunc {
 //			}
 //
 //			// Gửi phản hồi lỗi
-//			common.NewErrorResponse(c, status, "An error occurred", err.Error())
+//			Common.NewErrorResponse(c, status, "An error occurred", err.Error())
 //			return
 //		}
 //
 //		// Nếu không có lỗi, nhưng HTTP status khác 200 (ví dụ như 404 Not Found)
 //		if c.Writer.Status() != http.StatusOK {
 //			status := c.Writer.Status()
-//			common.NewErrorResponse(c, status, http.StatusText(status), "Request failed")
+//			Common.NewErrorResponse(c, status, http.StatusText(status), "Request failed")
 //		}
 //	}
 //}

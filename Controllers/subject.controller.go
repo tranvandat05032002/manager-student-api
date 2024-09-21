@@ -1,128 +1,145 @@
 package Controllers
 
 import (
-	"gin-gonic-gom/Middlewares"
-	"gin-gonic-gom/Models"
-	"gin-gonic-gom/Services/subject"
-	"gin-gonic-gom/common"
+	"fmt"
+	"gin-gonic-gom/Collections"
+	"gin-gonic-gom/Common"
+	"gin-gonic-gom/config"
 	"gin-gonic-gom/utils"
-	"net/http"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"net/http"
 )
 
-type SubjectController struct {
-	SubjectService subject.SubjectService
-}
-
-func NewSubject(subjectService subject.SubjectService) SubjectController {
-	return SubjectController{
-		SubjectService: subjectService,
-	}
-}
-func (subjectController *SubjectController) CreateSubjectController(ctx *gin.Context) {
-	var subjectInput Models.SubjectInput
-	if err := ctx.ShouldBindJSON(&subjectInput); err != nil {
+func CreateSubject(c *gin.Context) {
+	entry := Collections.SubjectModel{}
+	var (
+		DB  = config.GetMongoDB()
+		err error
+		//Other config
+		//.......
+	)
+	if err = c.ShouldBindBodyWith(&entry, binding.JSON); err != nil {
+		//Logger
+		//Response
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	err := subjectController.SubjectService.CreateSubject(subjectInput)
+	fmt.Println("Data --> ", entry)
+	res, errCheckTerm := entry.CheckExist(DB, entry.SubjectCode)
+	if errCheckTerm != nil {
+		Common.NewErrorResponse(c, http.StatusInternalServerError, "Lỗi hệ thống! ", nil)
+		return
+	}
+	if res {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Môn học đã tồn tại!", nil)
+		return
+	}
+	err = entry.Create(DB)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorAddDataMessage, err.Error())
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Lỗi hệ thống!", nil)
 		return
 	}
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, common.SuccessAddDataMessage, nil))
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, Common.SuccessAddDataMessage, nil))
 }
-
-func (subjectController *SubjectController) UpdateSubjectController(ctx *gin.Context) {
-	var subjectInput Models.SubjectInput
-	id := ctx.Param("id")
-	if err := ctx.ShouldBindJSON(&subjectInput); err != nil {
+func UpdateSubject(c *gin.Context) {
+	entry := Collections.SubjectModel{}
+	var (
+		DB  = config.GetMongoDB()
+		err error
+		//Other config
+		//.......
+	)
+	id := c.Param("id")
+	if err = c.ShouldBindBodyWith(&entry, binding.JSON); err != nil {
+		//Logger
+		//Response
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	res, err := subjectController.SubjectService.UpdateSubject(utils.ConvertStringToObjectId(id), subjectInput)
+	err = entry.Update(DB, utils.ConvertStringToObjectId(id), entry)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Cập nhật môn học thất bại!", err.Error())
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Cập nhật môn học thất bại!", err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "Cập nhật môn học thành công!", res))
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Cập nhật môn học thành công!", nil))
 }
-
-func (subjectController *SubjectController) GetAllSubjectController(ctx *gin.Context) {
-	limitStr := ctx.Query("limit")
-	pageStr := ctx.Query("page")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 {
-		limit = 5
-	}
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page <= 0 {
-		page = 1
-	}
-	subjects, total, err := subjectController.SubjectService.GetAllSubject(page, limit)
-	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+func DeleteSubject(c *gin.Context) {
+	id := c.Param("id")
+	subID := utils.ConvertStringToObjectId(id)
+	var (
+		subject Collections.SubjectModel
+		DB      = config.GetMongoDB()
+		err     error
+		//Other config
+		//.......
+	)
+	_, err = subject.FindByID(DB, subID)
+	if err != nil && err.Error() == mongo.ErrNoDocuments.Error() {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Không tìm thấy môn học!", nil)
 		return
 	}
-	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Lấy danh sách môn học thành công", subjects, total, page, limit))
+	err = subject.Delete(DB, subID)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Xóa môn học không thành công!", nil)
+		return
+	}
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Xóa môn học thành công", nil))
 }
-func (subjectController *SubjectController) DeleteSubjectController(ctx *gin.Context) {
-	majorId := ctx.Param("id")
-	res, err := subjectController.SubjectService.DeleteSubject(utils.ConvertStringToObjectId(majorId))
+func GetSubjectDetail(c *gin.Context) {
+	id := c.Param("id")
+	var (
+		subject Collections.SubjectModel
+		DB      = config.GetMongoDB()
+		err     error
+		//Other config
+		//.......
+	)
+	res, err := subject.FindByID(DB, utils.ConvertStringToObjectId(id))
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Xóa môn học không thành công!", err.Error())
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Môn học không tồn tại!", err.Error())
 		return
 	}
-	if res < 1 {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Môn học không tồn tại!", "")
-		return
-	}
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "Xóa môn học thành công", nil))
-}
-func (subjectController *SubjectController) GetSubjectDetailsController(ctx *gin.Context) {
-	subjectId := ctx.Param("id")
-	subject, err := subjectController.SubjectService.GetSubjectDetails(utils.ConvertStringToObjectId(subjectId))
-	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Môn học không tồn tại!", err.Error())
-		return
-	}
-	ctx.JSON(
+	c.JSON(
 		http.StatusOK,
-		common.SimpleSuccessResponse(http.StatusOK, "Lấy thông tin môn học thành công!", subject),
+		Common.SimpleSuccessResponse(http.StatusOK, "Lấy thông tin môn học thành công!", res),
 	)
 }
-func (subjectController *SubjectController) SearchSubjectController(ctx *gin.Context) {
-	subjectNameQuery := ctx.Query("subject_name")
-	limitStr := ctx.Query("limit")
-	pageStr := ctx.Query("page")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 {
-		limit = 5
+func GetAllSubjects(c *gin.Context) {
+	var (
+		subject Collections.SubjectModel
+		DB      = config.GetMongoDB()
+		err     error
+		//Other config
+		//.......
+	)
+	page, limit, skip := utils.Pagination(c)
+	res, err := subject.Find(DB, limit, skip)
+	total, _ := subject.Count(DB, bson.M{})
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		return
 	}
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page <= 0 {
-		page = 1
-	}
-	nameSubject := string(subjectNameQuery)
-	subjects, total, _ := subjectController.SubjectService.SearchSubject(nameSubject, page, limit)
-	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Tìm kiếm môn học thành công!!", subjects, total, page, limit))
+	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách môn học thành công", res, int(total), page, limit))
 }
-func (subjectController *SubjectController) RegisterSubjectRoutes(rg *gin.RouterGroup) {
-	subjectadminroute := rg.Group("/admin/subject")
-	{
-		subjectadminroute.Use(Middlewares.AuthValidationBearerMiddleware)
-		subjectadminroute.Use(Middlewares.RoleMiddleware("admin"))
-		{
-			subjectadminroute.GET("/all", subjectController.GetAllSubjectController)
-			subjectadminroute.GET("/details/:id", subjectController.GetSubjectDetailsController)
-			subjectadminroute.POST("/add", subjectController.CreateSubjectController)
-			subjectadminroute.GET("/search", subjectController.SearchSubjectController)
-			subjectadminroute.DELETE("/:id", subjectController.DeleteSubjectController)
-			subjectadminroute.PATCH("/:id", subjectController.UpdateSubjectController)
-		}
+func SearchSubject(c *gin.Context) {
+	var (
+		subject Collections.SubjectModel
+		err     error
+		DB      = config.GetMongoDB()
+		//Other config
+		//.......
+	)
+	query := c.Query("subject_name")
+	page, limit, skip := utils.Pagination(c)
+	res, total, err := subject.Search(DB, query, skip, limit)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Tìm kiếm xảy ra lỗi!", err.Error())
+		return
 	}
+	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Tìm kiếm môn học thành công!!", res, total, page, limit))
 }

@@ -1,4 +1,4 @@
-package common
+package Common
 
 import (
 	"github.com/gin-gonic/gin"
@@ -12,8 +12,8 @@ import (
 	}
 */
 type ErrorRes struct {
-	Status  int    `json:"status"`
-	Message string `json:"message,omitempty"`
+	Status  int         `json:"status"`
+	Message string      `json:"message,omitempty"`
 	Error   interface{} `json:"error,omitempty"`
 }
 

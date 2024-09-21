@@ -1,4 +1,4 @@
-package common
+package Common
 
 /*
 Cấu trúc của một response:

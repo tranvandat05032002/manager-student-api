@@ -76,11 +76,18 @@ func (t *TermModel) Update(DB *mongo.Database, id primitive.ObjectID, data inter
 	}
 	return nil
 }
-
-func (t *TermModel) Find(DB *mongo.Database, limit, skip int) (Terms, int, error) {
+func (t *TermModel) Count(DB *mongo.Database, filter interface{}) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
 	defer cancel()
-	count := 0
+	if total, err := DB.Collection(t.GetCollectionName()).CountDocuments(ctx, filter, options.Count()); err != nil {
+		return 0, err
+	} else {
+		return total, nil
+	}
+}
+func (t *TermModel) Find(DB *mongo.Database, limit, skip int) (Terms, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
 	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
 	cur, err := DB.Collection(t.GetCollectionName()).Find(ctx, bson.M{}, opts)
 	defer cur.Close(ctx)
@@ -89,15 +96,14 @@ func (t *TermModel) Find(DB *mongo.Database, limit, skip int) (Terms, int, error
 		var term TermModel
 		err := cur.Decode(&term)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
-		count++
 		terms = append(terms, term)
 	}
 	if err := cur.Err(); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return terms, count, err
+	return terms, err
 }
 
 func (t *TermModel) Delete(DB *mongo.Database, id primitive.ObjectID) error {

@@ -1,111 +1,129 @@
 package Controllers
 
 import (
+	"fmt"
+	"gin-gonic-gom/Collections"
 	"gin-gonic-gom/Common"
-	"gin-gonic-gom/Middlewares"
-	"gin-gonic-gom/Models"
-	"gin-gonic-gom/Services/term"
+	"gin-gonic-gom/config"
 	"gin-gonic-gom/utils"
-	"net/http"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"net/http"
 )
 
-type TermController struct {
-	TermService term.TermService
-}
-
-func NewTerm(termService term.TermService) TermController {
-	return TermController{
-		TermService: termService,
-	}
-}
-func (termController *TermController) CreateTermController(ctx *gin.Context) {
-	var termEnity Models.TermInput
-	if err := ctx.ShouldBindJSON(&termEnity); err != nil {
+func CreateTerm(c *gin.Context) {
+	entry := Collections.TermModel{}
+	var (
+		DB  = config.GetMongoDB()
+		err error
+		//Other config
+		//.......
+	)
+	if err = c.ShouldBindBodyWith(&entry, binding.JSON); err != nil {
+		//Logger
+		//Response
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	err := termController.TermService.CreateTerm(termEnity)
+	fmt.Println("Data --> ", entry)
+	res, errCheckTerm := entry.CheckExist(DB, entry.TermSemester, entry.TermFromYear, entry.TermToYear)
+	if errCheckTerm != nil {
+		Common.NewErrorResponse(c, http.StatusInternalServerError, "Lỗi hệ thống! ", nil)
+		return
+	}
+	if res {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Học kỳ đã tồn tại!", nil)
+		return
+	}
+	err = entry.Create(DB)
 	if err != nil {
-		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorAddDataMessage, err.Error())
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Lỗi hệ thống!", nil)
 		return
 	}
-	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, Common.SuccessAddDataMessage, nil))
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Thêm dữ liệu thành công!", nil))
 }
-
-func (termController *TermController) UpdateTermController(ctx *gin.Context) {
-	var termEnity Models.TermInput
-	id := ctx.Param("id")
-	if err := ctx.ShouldBindJSON(&termEnity); err != nil {
+func UpdateTerm(c *gin.Context) {
+	entry := Collections.TermModel{}
+	var (
+		DB  = config.GetMongoDB()
+		err error
+		//Other config
+		//.......
+	)
+	id := c.Param("id")
+	if err = c.ShouldBindBodyWith(&entry, binding.JSON); err != nil {
+		//Logger
+		//Response
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	res, err := termController.TermService.UpdateTerm(utils.ConvertStringToObjectId(id), termEnity)
+	err = entry.Update(DB, utils.ConvertStringToObjectId(id), entry)
 	if err != nil {
-		Common.NewErrorResponse(ctx, http.StatusBadRequest, "Cập nhật học kỳ trong năm thất bại!", err.Error())
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Cập nhật học kỳ trong năm thất bại!", err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Cập nhật học kỳ thành công!", res))
-}
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Cập nhật học kỳ thành công!", nil))
 
-func (termController *TermController) GetAllTermController(ctx *gin.Context) {
-	limitStr := ctx.Query("limit")
-	pageStr := ctx.Query("page")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 {
-		limit = 5
-	}
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page <= 0 {
-		page = 1
-	}
-	res, total, err := termController.TermService.GetAllTerm(page, limit)
-	if err != nil {
-		Common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
-		return
-	}
-	ctx.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách học kỳ thành công", res, total, page, limit))
 }
-func (termController *TermController) DeleteTermController(ctx *gin.Context) {
-	termId := ctx.Param("id")
-	res, err := termController.TermService.DeleteTerm(utils.ConvertStringToObjectId(termId))
+func DeleteTerm(c *gin.Context) {
+	id := c.Param("id")
+	termID := utils.ConvertStringToObjectId(id)
+	var (
+		term Collections.TermModel
+		DB   = config.GetMongoDB()
+		err  error
+		//Other config
+		//.......
+	)
+	_, err = term.FindByID(DB, termID)
+	if err != nil && err.Error() == mongo.ErrNoDocuments.Error() {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Không tìm thấy học kỳ!", nil)
+		return
+	}
+	err = term.Delete(DB, termID)
 	if err != nil {
-		Common.NewErrorResponse(ctx, http.StatusBadRequest, "Xóa học kỳ không thành công!", err.Error())
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Xóa học kỳ không thành công!", nil)
 		return
 	}
-	if res < 1 {
-		Common.NewErrorResponse(ctx, http.StatusBadRequest, "Học kỳ không tồn tại!", "")
-		return
-	}
-	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Xóa học kỳ thành công", nil))
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Xóa học kỳ thành công", nil))
 }
-func (termController *TermController) GetTermDetailsController(ctx *gin.Context) {
-	termId := ctx.Param("id")
-	res, err := termController.TermService.GetTermDetails(utils.ConvertStringToObjectId(termId))
+func GetTermDetail(c *gin.Context) {
+	id := c.Param("id")
+	var (
+		term Collections.TermModel
+		DB   = config.GetMongoDB()
+		err  error
+		//Other config
+		//.......
+	)
+	res, err := term.FindByID(DB, utils.ConvertStringToObjectId(id))
 	if err != nil {
-		Common.NewErrorResponse(ctx, http.StatusBadRequest, "Học kỳ không tồn tại!", err.Error())
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Học kỳ không tồn tại!", err.Error())
 		return
 	}
-	ctx.JSON(
+	c.JSON(
 		http.StatusOK,
 		Common.SimpleSuccessResponse(http.StatusOK, "Lấy thông tin học kỳ thành công!", res),
 	)
 }
-func (termController *TermController) RegisterTermRoutes(rg *gin.RouterGroup) {
-	termAdminRoute := rg.Group("/admin/term")
-	{
-		termAdminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
-		termAdminRoute.Use(Middlewares.RoleMiddleware("admin"))
-		{
-			termAdminRoute.GET("/all", termController.GetAllTermController)
-			termAdminRoute.GET("/details/:id", termController.GetTermDetailsController)
-			termAdminRoute.POST("/add", termController.CreateTermController)
-			termAdminRoute.DELETE("/:id", termController.DeleteTermController)
-			termAdminRoute.PATCH("/:id", termController.UpdateTermController)
-		}
+func GetAllTerms(c *gin.Context) {
+	var (
+		term Collections.TermModel
+		DB   = config.GetMongoDB()
+		err  error
+		//Other config
+		//.......
+	)
+	page, limit, skip := utils.Pagination(c)
+	res, err := term.Find(DB, limit, skip)
+	total, _ := term.Count(DB, bson.M{})
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		return
 	}
+	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách học kỳ thành công", res, int(total), page, limit))
 }

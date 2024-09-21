@@ -25,7 +25,7 @@ type MajorUpdateReq struct {
 }
 type Majors []MajorModel
 
-func (m *MajorModel) GetCollectionName() string {
+func (m MajorModel) GetCollectionName() string {
 	return "Majors"
 }
 func (m *MajorModel) CheckExist(DB *mongo.Database, majorId, majorName string) (bool, error) {
@@ -40,7 +40,7 @@ func (m *MajorModel) CheckExist(DB *mongo.Database, majorId, majorName string) (
 	}
 	if result := DB.Collection(m.GetCollectionName()).FindOne(ctx, filter); result.Err() != nil {
 		if result.Err() == mongo.ErrNoDocuments {
-			fmt.Println("Err")
+			fmt.Println("Running Err --> ", result.Err())
 			return false, nil
 		}
 		return false, result.Err()
@@ -61,7 +61,15 @@ func (m *MajorModel) Create(DB *mongo.Database) error {
 		return nil
 	}
 }
-
+func (m *MajorModel) Count(DB *mongo.Database, filter interface{}) (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+	if total, err := DB.Collection(m.GetCollectionName()).CountDocuments(ctx, filter, options.Count()); err != nil {
+		return 0, err
+	} else {
+		return total, nil
+	}
+}
 func (m *MajorModel) Update(DB *mongo.Database, id primitive.ObjectID, data interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
 	defer cancel()
@@ -78,10 +86,9 @@ func (m *MajorModel) Update(DB *mongo.Database, id primitive.ObjectID, data inte
 	return nil
 }
 
-func (m *MajorModel) Find(DB *mongo.Database, limit, skip int) (Majors, int, error) {
+func (m *MajorModel) Find(DB *mongo.Database, limit, skip int) (Majors, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
 	defer cancel()
-	count := 0
 	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
 	cur, err := DB.Collection(m.GetCollectionName()).Find(ctx, bson.M{}, opts)
 	defer cur.Close(ctx)
@@ -90,15 +97,14 @@ func (m *MajorModel) Find(DB *mongo.Database, limit, skip int) (Majors, int, err
 		var major MajorModel
 		err := cur.Decode(&major)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
-		count++
 		majors = append(majors, major)
 	}
 	if err := cur.Err(); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-	return majors, count, err
+	return majors, err
 }
 
 func (m *MajorModel) Delete(DB *mongo.Database, id primitive.ObjectID) error {

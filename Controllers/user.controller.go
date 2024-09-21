@@ -2,10 +2,10 @@ package Controllers
 
 import (
 	"fmt"
+	"gin-gonic-gom/Common"
 	"gin-gonic-gom/Middlewares"
 	"gin-gonic-gom/Models"
 	"gin-gonic-gom/Services/user"
-	"gin-gonic-gom/common"
 	"gin-gonic-gom/utils"
 	"net/http"
 	"strconv"
@@ -29,95 +29,98 @@ func New(userService user.UserService) UserController {
 // @Accept  json
 // @Produce  json
 // @Param createUserInput body Models.CreateUserInput true "Create User Input"
-// @Success 200 {object} common.Response{status=int,message=string,data=interface{}} "Success response"
-// @Failure 400 {object} common.ErrorResponse "Bad Request response"
+// @Success 200 {object} Common.Response{status=int,message=string,data=interface{}} "Success response"
+// @Failure 400 {object} Common.ErrorResponse "Bad Request response"
 // @Router /user/create [post]
 func (userController *UserController) CreateUser(ctx *gin.Context) {
-	var user Models.CreateUserInput
-	if err := ctx.ShouldBindJSON(&user); err != nil {
+	var userEnnity Models.CreateUserInput
+	if err := ctx.ShouldBindJSON(&userEnnity); err != nil {
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	switch user.Role {
+	switch userEnnity.Role {
 	case "student":
-		user.Role = "student"
+		userEnnity.Role = "student"
 	case "teacher":
-		user.Role = "teacher"
+		userEnnity.Role = "teacher"
 	case "admin":
-		user.Role = "admin"
+		userEnnity.Role = "admin"
 	default:
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorRoleMessage, "")
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorRoleMessage, "")
 		return
 	}
 	//Check exist email in DB
-	result, errCheckMail := userController.UserService.CheckExistEmail(user.Email)
-	resultPhone, errCheckPhone := userController.UserService.CheckExistEmail(user.Email)
+	result, errCheckMail := userController.UserService.CheckExistEmail(userEnnity.Email)
+	resultPhone, errCheckPhone := userController.UserService.CheckExistEmail(userEnnity.Email)
 	if result == true || resultPhone {
 		if result {
-			common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailExistMessage, "Email already exists")
+			Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorEmailExistMessage, "Email already exists")
 		} else if resultPhone {
-			common.NewErrorResponse(ctx, http.StatusBadRequest, "Số điện thoại đã tồn tại", "Phone already exists")
+			Common.NewErrorResponse(ctx, http.StatusBadRequest, "Số điện thoại đã tồn tại", "Phone already exists")
 		}
 		return
 	}
 
 	if errCheckMail != nil || errCheckPhone != nil {
 		if errCheckMail != nil {
-			common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailExistMessage, errCheckMail.Error())
+			Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorEmailExistMessage, errCheckMail.Error())
 		} else if errCheckPhone != nil {
-			common.NewErrorResponse(ctx, http.StatusBadRequest, "Số điện thoại đã tồn tại", errCheckPhone.Error())
+			Common.NewErrorResponse(ctx, http.StatusBadRequest, "Số điện thoại đã tồn tại", errCheckPhone.Error())
 		}
 		return
 	}
 
-	var password string = user.Password
+	password := userEnnity.Password
 	passwordHash, _ := utils.HashPassword(password)
-	user.Password = passwordHash
+	userEnnity.Password = passwordHash
 	// add user to DB
-	err := userController.UserService.CreateUser(&user)
+	err := userController.UserService.CreateUser(&userEnnity)
 
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorAddDataMessage, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorAddDataMessage, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, common.SuccessAddDataMessage, nil))
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, Common.SuccessAddDataMessage, nil))
 }
-func (useController *UserController) LoginUser(ctx *gin.Context) {
-	var user Models.AuthInput
-	if err := ctx.ShouldBindJSON(&user); err != nil {
+func (userController *UserController) LoginUser(ctx *gin.Context) {
+	var userEntity Models.AuthInput
+	if err := ctx.ShouldBindJSON(&userEntity); err != nil {
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	useController.UserService.LoginUser(&user, ctx)
+	userController.UserService.LoginUser(&userEntity, ctx)
 }
 func (userController *UserController) Logout(ctx *gin.Context) {
 	userId, _ := ctx.MustGet("userId").(string)
 	deviced, _ := ctx.MustGet("deviced").(string)
-	userController.UserService.Logout(deviced, utils.ConvertStringToObjectId(userId))
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, common.SuccessLogout, nil))
+	err := userController.UserService.Logout(deviced, utils.ConvertStringToObjectId(userId))
+	if err != nil {
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, "Đăng xuất thất bại", "")
+	}
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, Common.SuccessLogout, nil))
 }
 func (userController *UserController) GetMe(ctx *gin.Context) {
 	userId, exists := ctx.Get("userId")
 	role, exists := ctx.Get("role")
 	if !exists {
-		common.NewErrorResponse(ctx, http.StatusUnauthorized, common.ErrorRoleOrUserIDMessage, "")
+		Common.NewErrorResponse(ctx, http.StatusUnauthorized, Common.ErrorRoleOrUserIDMessage, "")
 		return
 	}
-	user, _ := userController.UserService.GetMe(userId.(string), role.(string))
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, common.SuccessGetMe, user))
+	res, _ := userController.UserService.GetMe(userId.(string), role.(string))
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, Common.SuccessGetMe, res))
 }
 func (userController *UserController) GetAccount(ctx *gin.Context) {
 	userId := ctx.Param("user_id")
-	account, err := userController.UserService.GetAccount(userId)
+	res, err := userController.UserService.GetAccount(userId)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusNotFound, common.ErrorFindUser, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusNotFound, Common.ErrorFindUser, err.Error())
 		return
 	}
 	ctx.JSON(
 		http.StatusOK,
-		common.SimpleSuccessResponse(http.StatusOK, "Get user thành công!", account),
+		Common.SimpleSuccessResponse(http.StatusOK, "Get user thành công!", res),
 	)
 }
 func (userController *UserController) GetAll(ctx *gin.Context) {
@@ -131,162 +134,162 @@ func (userController *UserController) GetAll(ctx *gin.Context) {
 	if err != nil || page <= 0 {
 		page = 1
 	}
-	users, total, err := userController.UserService.GetAll(page, limit)
+	res, total, err := userController.UserService.GetAll(page, limit)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Lấy danh sách users thành công", users, total, page, limit))
+	ctx.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách users thành công", res, total, page, limit))
 }
 func (userController *UserController) UpdateMe(ctx *gin.Context) {
-	var UserUpdate Models.UserUpdate
-	if err := ctx.ShouldBindJSON(&UserUpdate); err != nil {
+	var userEntity Models.UserUpdate
+	if err := ctx.ShouldBindJSON(&userEntity); err != nil {
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
 	userId, exists := ctx.Get("userId")
 	if !exists {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorFindUser, "")
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorFindUser, "")
 
 		return
 	}
-	user, err := userController.UserService.UpdateMe(userId.(string), &UserUpdate)
+	res, err := userController.UserService.UpdateMe(userId.(string), &userEntity)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorUpdateUser, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorUpdateUser, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, common.SuccessUpdateData, user))
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, Common.SuccessUpdateData, res))
 }
 func (userController *UserController) UpdateUser(ctx *gin.Context) {
-	var AccountUpdate Models.AccountUpdate
+	var userEntity Models.AccountUpdate
 	id := ctx.Param("id")
-	if err := ctx.ShouldBindJSON(&AccountUpdate); err != nil {
+	if err := ctx.ShouldBindJSON(&userEntity); err != nil {
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	user, err := userController.UserService.UpdateUser(&AccountUpdate, utils.ConvertStringToObjectId(id))
+	res, err := userController.UserService.UpdateUser(&userEntity, utils.ConvertStringToObjectId(id))
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorUpdateUser, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorUpdateUser, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, common.SuccessUpdateData, user))
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, Common.SuccessUpdateData, res))
 }
 func (userController *UserController) DeleteUser(ctx *gin.Context) {
 	userId := ctx.Param("user_id")
 	err := userController.UserService.DeleteUser(userId)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorDeleteUser, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorDeleteUser, err.Error())
 		return
 	}
 	message := fmt.Sprintf("Xóa thành công account")
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, message, nil))
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, message, nil))
 }
 func (userController *UserController) ChangePassword(ctx *gin.Context) {
-	var PasswordInput Models.ChangePasswordInput
+	var passwordInput Models.ChangePasswordInput
 	userId, exists := ctx.Get("userId")
 	if !exists {
-		common.NewErrorResponse(ctx, http.StatusNotFound, common.ErrorFindUser, "")
+		Common.NewErrorResponse(ctx, http.StatusNotFound, Common.ErrorFindUser, "")
 		return
 	}
-	if err := ctx.ShouldBindJSON(&PasswordInput); err != nil {
+	if err := ctx.ShouldBindJSON(&passwordInput); err != nil {
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	err := userController.UserService.ChangePassword(userId.(string), &PasswordInput)
+	err := userController.UserService.ChangePassword(userId.(string), &passwordInput)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorChangePassword, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorChangePassword, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "Thay đổi mật khẩu thành công", nil))
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Thay đổi mật khẩu thành công", nil))
 }
 func (userController *UserController) FindEmail(ctx *gin.Context) {
-	var EmailInput Models.FindEmailInput
-	if err := ctx.ShouldBindJSON(&EmailInput); err != nil {
+	var emailInput Models.FindEmailInput
+	if err := ctx.ShouldBindJSON(&emailInput); err != nil {
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	userByEmail, err := userController.UserService.FindEmail(EmailInput.Email)
+	userByEmail, err := userController.UserService.FindEmail(emailInput.Email)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailNotFound, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorEmailNotFound, err.Error())
 		return
 	}
 	// Send OTP to email
 	otp, err := utils.GeneratorOTP(6)
 	otpHash, _ := utils.HashPassword(otp)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorCreateOTP, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorCreateOTP, err.Error())
 		return
 	}
 	errOTP := userController.UserService.SaveOTPForUser(userByEmail.Id, otpHash)
 	if errOTP != nil {
-		common.NewErrorResponse(ctx, http.StatusInternalServerError, common.ErrorInternetServer, errOTP.Error())
+		Common.NewErrorResponse(ctx, http.StatusInternalServerError, Common.ErrorInternetServer, errOTP.Error())
 		return
 	}
 	_ = utils.SendSecretCodeToEmail(userByEmail.Email, otp, otpHash)
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "tìm thấy user theo email success!!!", otp))
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "tìm thấy user theo email success!!!", otp))
 }
-func (usercontroller *UserController) VerifyOTP(ctx *gin.Context) {
+func (userController *UserController) VerifyOTP(ctx *gin.Context) {
 	var OTPReq Models.OTPReq
 	if err := ctx.ShouldBindJSON(&OTPReq); err != nil {
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	_, err := usercontroller.UserService.VerifyOTP(OTPReq.Email, OTPReq.OTPCode)
+	_, err := userController.UserService.VerifyOTP(OTPReq.Email, OTPReq.OTPCode)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorOTP, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorOTP, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "Xác thực OTP thành công!", nil))
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Xác thực OTP thành công!", nil))
 }
-func (usercontroller *UserController) ResendOTP(ctx *gin.Context) {
-	var EmailInput Models.FindEmailInput
-	if err := ctx.ShouldBindJSON(&EmailInput); err != nil {
+func (userController *UserController) ResendOTP(ctx *gin.Context) {
+	var emailInput Models.FindEmailInput
+	if err := ctx.ShouldBindJSON(&emailInput); err != nil {
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	userByEmail, err := usercontroller.UserService.FindEmail(EmailInput.Email)
+	userByEmail, err := userController.UserService.FindEmail(emailInput.Email)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorEmailNotFound, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorEmailNotFound, err.Error())
 		return
 	}
 	// Send OTP to email
 	otp, err := utils.GeneratorOTP(6)
 	otpHash, _ := utils.HashOTP(otp)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorCreateOTP, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorCreateOTP, err.Error())
 		return
 	}
-	_, errOTP := usercontroller.UserService.ResendOTP(userByEmail.Id, otpHash)
+	_, errOTP := userController.UserService.ResendOTP(userByEmail.Id, otpHash)
 	if errOTP != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorResendOTP, errOTP.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorResendOTP, errOTP.Error())
 		return
 	}
 	_ = utils.SendSecretCodeToEmail(userByEmail.Email, otp, otpHash)
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "Đã gửi lại mã OTP thành công!!!", otp))
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Đã gửi lại mã OTP thành công!!!", otp))
 }
 func (userController *UserController) ForgotPasswordByOTP(ctx *gin.Context) {
-	var ForgotPasswordInput Models.ForgotPasswordInput
-	if err := ctx.ShouldBindJSON(&ForgotPasswordInput); err != nil {
+	var forgotPasswordInput Models.ForgotPasswordInput
+	if err := ctx.ShouldBindJSON(&forgotPasswordInput); err != nil {
 		errorMessages := utils.GetErrorMessagesResponse(err)
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorShouldBindDataMessage, errorMessages)
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
 		return
 	}
-	if ForgotPasswordInput.ConfirmPassword != ForgotPasswordInput.NewPassword {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Mật khẩu không khớp!", "")
+	if forgotPasswordInput.ConfirmPassword != forgotPasswordInput.NewPassword {
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, "Mật khẩu không khớp!", "")
 		return
 	}
-	_, err := userController.UserService.ForgotPasswordByOTP(&ForgotPasswordInput)
+	_, err := userController.UserService.ForgotPasswordByOTP(&forgotPasswordInput)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorUpdatePassword, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorUpdatePassword, err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, "Reset Password Success!!", ForgotPasswordInput))
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Reset Password Success!!", forgotPasswordInput))
 }
 func (userController *UserController) SearchUser(ctx *gin.Context) {
 	nameQuery := ctx.Query("name")
@@ -300,9 +303,8 @@ func (userController *UserController) SearchUser(ctx *gin.Context) {
 	if err != nil || page <= 0 {
 		page = 1
 	}
-	name := string(nameQuery)
-	users, total, _ := userController.UserService.SearchUser(name, page, limit)
-	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Tìm kiếm user thành công!!", users, total, page, limit))
+	res, total, _ := userController.UserService.SearchUser(nameQuery, page, limit)
+	ctx.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Tìm kiếm user thành công!!", res, total, page, limit))
 }
 func (userController *UserController) GetAllUserRoleIsStudent(ctx *gin.Context) {
 	limitStr := ctx.Query("limit")
@@ -315,12 +317,12 @@ func (userController *UserController) GetAllUserRoleIsStudent(ctx *gin.Context) 
 	if err != nil || page <= 0 {
 		page = 1
 	}
-	terms, total, err := userController.UserService.GetAllUserRoleIsStudent(page, limit)
+	res, total, err := userController.UserService.GetAllUserRoleIsStudent(page, limit)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Lấy danh sách sinh viên thành công", terms, total, page, limit))
+	ctx.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách sinh viên thành công", res, total, page, limit))
 }
 func (userController *UserController) GetAllUserRoleIsTeacher(ctx *gin.Context) {
 	limitStr := ctx.Query("limit")
@@ -333,12 +335,12 @@ func (userController *UserController) GetAllUserRoleIsTeacher(ctx *gin.Context) 
 	if err != nil || page <= 0 {
 		page = 1
 	}
-	terms, total, err := userController.UserService.GetAllUserRoleIsTeacher(page, limit)
+	res, total, err := userController.UserService.GetAllUserRoleIsTeacher(page, limit)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Lấy danh sách giáo viên thành công", terms, total, page, limit))
+	ctx.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách giáo viên thành công", res, total, page, limit))
 }
 func (userController *UserController) GetListUserDependingDeletion(ctx *gin.Context) {
 	limitStr := ctx.Query("limit")
@@ -351,53 +353,53 @@ func (userController *UserController) GetListUserDependingDeletion(ctx *gin.Cont
 	if err != nil || page <= 0 {
 		page = 1
 	}
-	terms, total, err := userController.UserService.GetListUserDependingDeletion(page, limit)
+	res, total, err := userController.UserService.GetListUserDependingDeletion(page, limit)
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy danh sách!", err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, "Không thể lấy danh sách!", err.Error())
 		return
 	}
-	ctx.JSON(http.StatusOK, common.NewSuccessResponse(http.StatusOK, "Lấy danh sách sinh viên đang chờ xóa thành công", terms, total, page, limit))
+	ctx.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách sinh viên đang chờ xóa thành công", res, total, page, limit))
 }
 func (userController *UserController) RestoreUser(ctx *gin.Context) {
 	userId := ctx.Param("id")
 	err := userController.UserService.RestoreUser(utils.ConvertStringToObjectId(userId))
 	if err != nil {
-		common.NewErrorResponse(ctx, http.StatusBadRequest, common.ErrorDeleteUser, err.Error())
+		Common.NewErrorResponse(ctx, http.StatusBadRequest, Common.ErrorDeleteUser, err.Error())
 		return
 	}
 	message := fmt.Sprintf("khôi phục tài khoản %s", userId)
-	ctx.JSON(http.StatusOK, common.SimpleSuccessResponse(http.StatusOK, message, nil))
+	ctx.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, message, nil))
 }
-func (userController *UserController) RegisterUserRoutes(rg *gin.RouterGroup) {
-	userroute := rg.Group("/user") // Client
+func (authController *UserController) RegisterAuthRoutes(rg *gin.RouterGroup) {
+	userRoute := rg.Group("/user") // Client
 	{
-		userroute.POST("/create", userController.CreateUser)
-		userroute.POST("/login", userController.LoginUser)
-		userroute.POST("/find-email", userController.FindEmail)
-		userroute.POST("/otp/verify-otp", userController.VerifyOTP)
-		userroute.POST("/otp/resend-otp", userController.ResendOTP)
-		userroute.POST("/forgot-password", userController.ForgotPasswordByOTP)
-		userroute.Use(Middlewares.AuthValidationBearerMiddleware)
+		userRoute.POST("/create", authController.CreateUser)
+		userRoute.POST("/login", authController.LoginUser)
+		userRoute.POST("/find-email", authController.FindEmail)
+		userRoute.POST("/otp/verify-otp", authController.VerifyOTP)
+		userRoute.POST("/otp/resend-otp", authController.ResendOTP)
+		userRoute.POST("/forgot-password", authController.ForgotPasswordByOTP)
+		userRoute.Use(Middlewares.AuthValidationBearerMiddleware)
 		{
-			userroute.GET("/me", userController.GetMe)
-			userroute.POST("/logout", userController.Logout)
-			userroute.GET("/:user_id", userController.GetAccount)
-			userroute.PATCH("/me/update", userController.UpdateMe)
-			userroute.PUT("/change-password", userController.ChangePassword)
+			userRoute.GET("/me", authController.GetMe)
+			userRoute.POST("/logout", authController.Logout)
+			userRoute.GET("/:user_id", authController.GetAccount)
+			userRoute.PATCH("/me/update", authController.UpdateMe)
+			userRoute.PUT("/change-password", authController.ChangePassword)
 		}
 	}
 	// Admin
-	adminroute := rg.Group("/admin")
-	adminroute.Use(Middlewares.AuthValidationBearerMiddleware)
-	adminroute.Use(Middlewares.RoleMiddleware("admin"))
+	adminRoute := rg.Group("/admin")
+	adminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
+	adminRoute.Use(Middlewares.RoleMiddleware("admin"))
 	{
-		adminroute.GET("/all", userController.GetAll)
-		adminroute.GET("/user/search", userController.SearchUser)
-		adminroute.GET("/user/student/all", userController.GetAllUserRoleIsStudent)
-		adminroute.GET("/user/teacher/all", userController.GetAllUserRoleIsTeacher)
-		adminroute.PATCH("/update/:id", userController.UpdateUser)
-		adminroute.DELETE("/delete/:user_id", userController.DeleteUser)
-		adminroute.GET("/user/pending-deletion", userController.GetListUserDependingDeletion)
-		adminroute.PATCH("/user/restore/:id", userController.RestoreUser)
+		adminRoute.GET("/all", authController.GetAll)
+		adminRoute.GET("/user/search", authController.SearchUser)
+		adminRoute.GET("/user/student/all", authController.GetAllUserRoleIsStudent)
+		adminRoute.GET("/user/teacher/all", authController.GetAllUserRoleIsTeacher)
+		adminRoute.PATCH("/update/:id", authController.UpdateUser)
+		adminRoute.DELETE("/delete/:user_id", authController.DeleteUser)
+		adminRoute.GET("/user/pending-deletion", authController.GetListUserDependingDeletion)
+		adminRoute.PATCH("/user/restore/:id", authController.RestoreUser)
 	}
 }

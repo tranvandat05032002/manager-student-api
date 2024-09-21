@@ -1,41 +1,45 @@
-package media
+package Collections
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"gin-gonic-gom/Models"
+	"gin-gonic-gom/config"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"time"
 )
 
-type MediaImplementService struct {
-	mediacollection *mongo.Collection
-	usercollection  *mongo.Collection
-	ctx             context.Context
+type MediaModel struct {
+	Id        primitive.ObjectID `bson:"_id"`
+	Url       string             `json:"url" bson:"url" binding:"required"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
 }
 
-func NewMediaService(mediacollection *mongo.Collection, usercollection *mongo.Collection, ctx context.Context) MediaService {
-	return &MediaImplementService{
-		mediacollection: mediacollection,
-		usercollection:  usercollection,
-		ctx:             ctx,
+func (m *MediaModel) GetCollectionName() string {
+	return "Medias"
+}
+func (m *MediaModel) Upload(DB *mongo.Database, URL string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+	// Parse Query
+	m.Id = primitive.NewObjectID()
+	m.Url = URL
+	m.CreatedAt = time.Now()
+	m.UpdatedAt = time.Now()
+	if _, err := DB.Collection(m.GetCollectionName()).InsertOne(ctx, m); err != nil {
+		return err
+	} else {
+		return nil
 	}
 }
 
-func (a *MediaImplementService) Upload(path string) error {
-	MediaData := Models.MediaModel{
-		Id:  primitive.NewObjectID(),
-		Url: path,
-	}
-	_, err := a.mediacollection.InsertOne(a.ctx, &MediaData)
-	if err != nil {
-		return fmt.Errorf(err.Error())
-	}
-	return nil
-}
-func (a *MediaImplementService) UploadExcelDataUser(userList []Models.UserModel) error {
+func (m *MediaModel) InsertManyUser(userList []Models.UserModel) error {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
 	if len(userList) == 0 {
 		return errors.New("Danh sách rỗng")
 	}
@@ -51,7 +55,7 @@ func (a *MediaImplementService) UploadExcelDataUser(userList []Models.UserModel)
 					bson.D{{"phone", user.Phone}},
 				}},
 		}
-		err := a.usercollection.FindOne(a.ctx, filter).Decode(&existsUser)
+		err := config.GetMongoDB().Collection("Users").FindOne(ctx, filter).Decode(&existsUser)
 		if err == mongo.ErrNoDocuments {
 			usersInsertInterface = append(usersInsertInterface, user)
 		} else if err != nil {
@@ -64,7 +68,7 @@ func (a *MediaImplementService) UploadExcelDataUser(userList []Models.UserModel)
 		}
 	}
 	if duplicateCount == 0 {
-		_, err := a.usercollection.InsertMany(a.ctx, usersInsertInterface)
+		_, err := config.GetMongoDB().Collection("Users").InsertMany(ctx, usersInsertInterface)
 		if err != nil {
 			return err
 		}

@@ -8,6 +8,7 @@ import (
 	"gin-gonic-gom/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 )
@@ -54,12 +55,13 @@ func GetAllMajors(c *gin.Context) {
 		//.......
 	)
 	page, limit, skip := utils.Pagination(c)
-	res, total, err := major.Find(DB, limit, skip)
+	total, _ := major.Count(DB, bson.M{})
+	res, err := major.Find(DB, limit, skip)
 	if err != nil {
 		Common.NewErrorResponse(c, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách ngành thành công", res, total, page, limit))
+	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách ngành thành công", res, int(total), page, limit))
 }
 func UpdateMajor(c *gin.Context) {
 	request := Collections.MajorModel{}

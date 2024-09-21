@@ -6,12 +6,7 @@ import (
 	"gin-gonic-gom/Controllers"
 	"gin-gonic-gom/Controllers/jobs"
 	"gin-gonic-gom/Routes"
-	"gin-gonic-gom/Services/major"
-	"gin-gonic-gom/Services/media"
-	"gin-gonic-gom/Services/schedule"
 	statiscal "gin-gonic-gom/Services/statistical"
-	"gin-gonic-gom/Services/subject"
-	"gin-gonic-gom/Services/term"
 	"gin-gonic-gom/Services/user"
 	"gin-gonic-gom/config"
 	_ "gin-gonic-gom/docs"
@@ -41,18 +36,8 @@ var (
 	server       *gin.Engine
 	us           user.UserService
 	uc           Controllers.UserController
-	ms           media.MediaService
-	mc           Controllers.MediaController
-	mjs          major.MajorService
-	mjc          Controllers.MajorController
-	subs         subject.SubjectService
-	subc         Controllers.SubjectController
-	terms        term.TermService
-	termc        Controllers.TermController
 	statisticals statiscal.StatisticalService
 	statisticalc Controllers.StatisticalController
-	schedules    schedule.ScheduleService
-	schedulec    Controllers.ScheduleController
 	ctx          context.Context
 	userco       *mongo.Collection
 	tokenco      *mongo.Collection
@@ -129,64 +114,14 @@ func InitializeDatabase() {
 	tokenco = mongoCon.Collection("Tokens")
 	// OTP collection
 	otpco = mongoCon.Collection("OTPs")
-	//Media collection
-	mediaco = mongoCon.Collection("Medias")
-	// Major collection
-	//majorco = mongoCon.Collection("Majors")
-	//indexMajorName := "major_name_text"
-	//indexMajorExists, errIndex := utils.CheckIndexExists(ctx, majorco, indexMajorName)
-	//if errIndex != nil {
-	//	fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
-	//}
-	//if !indexMajorExists {
-	//	indexMajorModel := createIndex("major_name", "text")
-	//	_, err := majorco.Indexes().CreateOne(context.TODO(), indexMajorModel)
-	//	if err != nil {
-	//		fmt.Println("Lỗi trong quá trình tạo index collection Major")
-	//	}
-	//} else {
-	//	fmt.Println("Index already exists:", indexMajorName)
-	//}
-	// Subject collection
-	subjectco = mongoCon.Collection("Subjects")
-	indexSubjectName := "subject_name_text"
-	indexSubjectExists, errIndex := utils.CheckIndexExists(ctx, subjectco, indexSubjectName)
-	if errIndex != nil {
-		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
-	}
-	if !indexSubjectExists {
-		indexSubjectModel := createIndex("subject_name", "text")
-		_, err := subjectco.Indexes().CreateOne(context.TODO(), indexSubjectModel)
-		if err != nil {
-			fmt.Println("Lỗi trong quá trình tạo index collection Subjects")
-		}
-	} else {
-		fmt.Println("Index already exists:", indexSubjectName)
-	}
-	// Term collection
-	termco = mongoCon.Collection("Terms")
 	//Schedule collection
 	scheduleco = mongoCon.Collection("Schedules")
 
 	us = user.NewUserService(userco, majorco, tokenco, otpco, ctx)
 	uc = Controllers.New(us)
-	ms = media.NewMediaService(mediaco, userco, ctx)
-	mc = Controllers.NewMedia(ms)
-
-	mjs = major.NewMajorService(majorco, ctx)
-	mjc = Controllers.NewMajor(mjs)
-
-	subs = subject.NewMajorService(subjectco, termco, ctx)
-	subc = Controllers.NewSubject(subs)
-
-	terms = term.NewTermService(termco, ctx)
-	termc = Controllers.NewTerm(terms)
 
 	statisticals = statiscal.NewStatisticalService(termco, ctx)
 	statisticalc = Controllers.NewStatistical(statisticals)
-
-	schedules = schedule.NewScheduleService(scheduleco, ctx)
-	schedulec = Controllers.NewSchedule(schedules)
 }
 func main() {
 	InitializeConfig()
@@ -196,6 +131,7 @@ func main() {
 			log.Println("Error disconnecting MongoDB client: ---> ", err)
 		}
 	}(mongoClient, ctx)
+	config.InitIndex()
 	//err := utils.InitCache()
 	//if err != nil {
 	//	fmt.Println(err)
@@ -207,10 +143,6 @@ func main() {
 	basepath := server.Group("/v1/api")
 	Routes.Router(basepath)
 	//uc.RegisterAuthRoutes(basepath)
-	//mc.RegisterMediaRoutes(basepath)
-	//mjc.RegisterMajorRoutes(basepath)
-	//subc.RegisterSubjectRoutes(basepath)
-	//termc.RegisterTermRoutes(basepath)
 	//statisticalc.RegisterStatisticalRoutes(basepath)
 	//schedulec.RegisterScheduleRoutes(basepath)
 	jobs.JobRunner(us)

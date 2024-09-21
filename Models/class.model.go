@@ -2,7 +2,7 @@ package Models
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
-// // Class represents a class for a subject
+// Class represents a class for a subject
 type ClassModel struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty"`
 	ClassCode   string             `json:"class_code" bson:"class_code"`

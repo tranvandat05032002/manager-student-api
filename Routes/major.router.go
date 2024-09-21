@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func MajorRouter(major *gin.RouterGroup) {
+func MajorRoutes(major *gin.RouterGroup) {
 	majorAdminRoute := major.Group("/admin/major")
 	{
 		//majorAdminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
@@ -13,7 +13,7 @@ func MajorRouter(major *gin.RouterGroup) {
 		{
 			majorAdminRoute.GET("/details/:id", Controllers.GetDetailMajor)
 			majorAdminRoute.GET("/all", Controllers.GetAllMajors)
-			majorAdminRoute.POST("/add", Controllers.PostMajor)
+			majorAdminRoute.POST("/add", Controllers.CreateMajor)
 			majorAdminRoute.GET("/search", Controllers.SearchMajor)
 			majorAdminRoute.DELETE("/:id", Controllers.DeleteMajor)
 			majorAdminRoute.PATCH("/:id", Controllers.UpdateMajor)

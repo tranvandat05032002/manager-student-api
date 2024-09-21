@@ -1,4 +1,4 @@
-package common
+package Common
 
 const (
 	ErrorInternetServer        = "Hệ thống đã xảy ra lỗi!"
@@ -9,7 +9,7 @@ const (
 	ErrorAddDataMessage        = "Thêm dữ liệu không thành công!"
 	ErrorRoleOrUserIDMessage   = "UserID hoặc Role không tìm thấy!"
 	ErrorEmailOrPassword       = "Email hoặc mật khẩu không hợp lệ!"
-	ErrorPassword              = "Mật khẩu không hợp lệ!"
+	ErrorPassword              = "Email hoặc mật khẩu không hợp lệ!"
 	ErrorFindUser              = "không tìm thấy người dùng!"
 	ErrorDeleteTokenData       = "Xóa token dữ liệu không thành công!"
 	ErrorUpdateUser            = "Cập nhật thông tin người dùng thất bại!"
