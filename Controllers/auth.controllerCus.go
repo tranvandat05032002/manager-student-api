@@ -173,7 +173,6 @@ func GetMe(c *gin.Context) {
 func SignOut(c *gin.Context) {
 	var (
 		DB         = config.GetMongoDB()
-		err        error
 		tokenEntry Collections.TokenModel
 	)
 	var token = c.Request.Header.Get("Authorization")
@@ -185,13 +184,14 @@ func SignOut(c *gin.Context) {
 			token = token[6:]
 		}
 	}
-	filter := bson.D{
-		{"$and", bson.A{
-			bson.M{"access_token": token},
-			bson.M{"device": device},
-		}},
+	filter := bson.M{"device": device}
+
+	err := tokenEntry.DeleteOne(DB, filter)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Đăng xuất thất bại", "")
+		return
 	}
-	err = tokenEntry.DeleteOne(DB, filter)
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, Common.SuccessLogout, nil))
 }
 
 func FindEmail(c *gin.Context) {
