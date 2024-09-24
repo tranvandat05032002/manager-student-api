@@ -2,14 +2,15 @@ package Routes
 
 import (
 	"gin-gonic-gom/Controllers"
+	"gin-gonic-gom/Middlewares"
 	"github.com/gin-gonic/gin"
 )
 
 func MajorRoutes(major *gin.RouterGroup) {
 	majorAdminRoute := major.Group("/admin/major")
 	{
-		//majorAdminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
-		//majorAdminRoute.Use(Middlewares.RoleMiddleware("admin"))
+		majorAdminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
+		majorAdminRoute.Use(Middlewares.RoleMiddleware("admin"))
 		{
 			majorAdminRoute.GET("/details/:id", Controllers.GetDetailMajor)
 			majorAdminRoute.GET("/all", Controllers.GetAllMajors)

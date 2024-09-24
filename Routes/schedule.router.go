@@ -16,8 +16,8 @@ func ScheduleRoutes(rg *gin.RouterGroup) {
 	}
 	adminsScheduleRoute := rg.Group("/admin/schedule")
 	{
-		//adminsScheduleRoute.Use(Middlewares.AuthValidationBearerMiddleware)
-		//adminsScheduleRoute.Use(Middlewares.RoleMiddleware("admin"))
+		adminsScheduleRoute.Use(Middlewares.AuthValidationBearerMiddleware)
+		adminsScheduleRoute.Use(Middlewares.RoleMiddleware("admin"))
 		{
 			adminsScheduleRoute.GET("/all", Controllers.GetAllSchedules)
 			adminsScheduleRoute.GET("/details/:id", Controllers.GetDetailSchedule)

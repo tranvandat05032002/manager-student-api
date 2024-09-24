@@ -30,6 +30,8 @@ func GetCustomErrorMessage(field, tag string) string {
 		return field + " phải nhỏ hơn hoặc bằng 2100"
 	case "oneof":
 		return field + "chỉ được 1 hoặc 2 hoặc 3"
+	case "startswith":
+		return field + " bắt đầu là số 0"
 	default:
 		return field + " không hợp lệ"
 	}
@@ -66,6 +68,9 @@ func extractValue(field, tag string) string {
 		return "2"
 	} else if field == "SubjectName" && tag == "max" {
 		return "100"
+	}
+	if field == "Phone" && tag == "startswith" {
+		return ""
 	}
 	if field == "Department" && tag == "min" {
 		return "2"

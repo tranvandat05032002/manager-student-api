@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"reflect"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,7 +32,20 @@ func ConvertDurationToTimeUTC(timeDuration time.Duration) time.Time {
 
 	return expirationTimeUTCPlus7
 }
+func Now() time.Time {
+	timeZone, _ := strconv.Atoi("0")
+	return time.Now().Add(time.Duration(timeZone) * time.Hour)
+}
+func ConvertToVietnamTime(t time.Time) time.Time {
+	location, _ := time.LoadLocation("Asia/Ho_Chi_Minh")
 
+	vietnameTime := t.In(location)
+	return vietnameTime
+}
+func ConvertTimeYYYYMMDD(input string) time.Time {
+	time, _ := time.Parse("2006-01-02", input)
+	return time
+}
 func ConvertStringToObjectId(userId string) primitive.ObjectID {
 	userIdObjecId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {

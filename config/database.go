@@ -59,6 +59,22 @@ func createIndex(indexName string, indexType interface{}) mongo.IndexModel {
 func InitIndex() {
 	ctx, cancel := context.WithTimeout(context.Background(), CTimeOut)
 	defer cancel()
+	// User index
+	indexNameUser := "name_text"
+	userCollection := GetMongoDB().Collection("Users")
+	indexUserExists, errIndex := utils.CheckIndexExists(ctx, userCollection, indexNameUser)
+	if errIndex != nil {
+		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
+	}
+	if !indexUserExists {
+		indexUserModel := createIndex("name", "text")
+		_, err := userCollection.Indexes().CreateOne(context.TODO(), indexUserModel)
+		if err != nil {
+			fmt.Println("Lỗi trong quá trình tạo index collection Users")
+		}
+	} else {
+		fmt.Println("Index already exists:", indexNameUser)
+	}
 	//Major index
 	indexMajorName := "major_name_text"
 	majorCollection := GetMongoDB().Collection("Majors")

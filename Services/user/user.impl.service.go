@@ -163,7 +163,7 @@ func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Con
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	var foundUser Models.UserModel
 	deviced := c.Request.Header.Get("User-Agent")
-	expAccessToken := time.Minute * 30
+	//expAccessToken := time.Minute * 30
 	expRefreshToken := time.Hour * 24 * 3
 	err := a.usercollection.FindOne(ctx, bson.M{"email": authInput.Email}).Decode(&foundUser)
 	defer cancel()
@@ -187,13 +187,13 @@ func (a *UserImplementService) LoginUser(authInput *Models.AuthInput, c *gin.Con
 		return
 	}
 	// Generator token and Deviced
-	access_token, err_access_token := utils.GenerateAccessToken(expAccessToken, &foundUser, os.Getenv("ACCESS_TOKEN_SECRET"))
+	access_token, err_access_token := utils.GenerateAccessToken(foundUser.Id, "", os.Getenv("ACCESS_TOKEN_SECRET"))
 	helper.ErrorPanic(err_access_token)
-	refresh_token, err_refresh_token := utils.GenerateRefreshToken(expRefreshToken, &foundUser, os.Getenv("REFRESH_TOKEN_SECRET"))
+	refresh_token, err_refresh_token := utils.GenerateRefreshToken(foundUser.Id, "", os.Getenv("REFRESH_TOKEN_SECRET"))
 	helper.ErrorPanic(err_refresh_token)
 	// set cookie
-	c.SetCookie("access_token", access_token, 3600, "/", c.Request.Host, false, true)
 	c.SetCookie("refresh_token", refresh_token, 3600, "/", c.Request.Host, false, true)
+	c.SetCookie("access_token", access_token, 3600, "/", c.Request.Host, false, true)
 	// cap nhat hoac them token neu chua ton tai
 	filterDeviced := bson.D{{"deviced", deviced}}
 	updateToken := bson.D{{"$set", bson.D{

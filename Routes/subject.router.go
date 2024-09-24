@@ -2,14 +2,15 @@ package Routes
 
 import (
 	"gin-gonic-gom/Controllers"
+	"gin-gonic-gom/Middlewares"
 	"github.com/gin-gonic/gin"
 )
 
 func SubjectRoutes(subject *gin.RouterGroup) {
 	subjectAdminRoute := subject.Group("/admin/subject")
 	{
-		//subjectAdminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
-		//subjectAdminRoute.Use(Middlewares.RoleMiddleware("admin"))
+		subjectAdminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
+		subjectAdminRoute.Use(Middlewares.RoleMiddleware("admin"))
 		{
 			subjectAdminRoute.GET("/all", Controllers.GetAllSubjects)
 			subjectAdminRoute.GET("/details/:id", Controllers.GetSubjectDetail)

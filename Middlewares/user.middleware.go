@@ -2,12 +2,11 @@ package Middlewares
 
 import (
 	"context"
+	"gin-gonic-gom/Collections"
 	"gin-gonic-gom/Common"
-	"gin-gonic-gom/Models"
 	"gin-gonic-gom/config"
 	"gin-gonic-gom/utils"
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 	"net/http"
 	"os"
 	"strings"
@@ -17,11 +16,13 @@ import (
 var ctx context.Context
 
 func AuthValidationBearerMiddleware(c *gin.Context) {
-	var ctx, _ = context.WithTimeout(context.Background(), 100*time.Second)
-	tokenCollection := config.GetMongoDB().Collection("Tokens")
-	//authHeader := c.GetHeader("Authorization")
+	var (
+		DB         = config.GetMongoDB()
+		tokenEntry Collections.TokenModel
+		err        error
+	)
 	var token = c.Request.Header.Get("Authorization")
-	deviced := c.Request.Header.Get("User-Agent")
+	device := c.Request.Header.Get("User-Agent")
 	if token == "" {
 		cookie, _ := c.Request.Cookie("access_token")
 		token = cookie.String()
@@ -41,19 +42,30 @@ func AuthValidationBearerMiddleware(c *gin.Context) {
 	}
 	tokenString := strings.TrimSpace(token)
 	accessSecretKey := os.Getenv("ACCESS_TOKEN_SECRET")
-	accessSecretKeyByte := []byte(accessSecretKey)
-	claims, _ := utils.DecodedToken(tokenString, accessSecretKeyByte)
-	filterToken := bson.M{"access_token": tokenString}
-	var tokenRes Models.TokenModel
-	_ = tokenCollection.FindOne(ctx, filterToken).Decode(&tokenRes)
-	//if err != nil {
-	//	Common.NewErrorResponse(c, http.StatusUnauthorized, "Decoded thất bại!", err.Error())
-	//	c.Abort()
-	//	return
-	//}
-	c.Set("deviced", deviced)
-	c.Set("userId", claims["userID"].(string))
-	c.Set("role", claims["role"].(string))
+	userToken, err := utils.DecodedToken(tokenString, accessSecretKey)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusUnauthorized, "Decoded thất bại!", err.Error())
+		c.Abort()
+		return
+	}
+	err = tokenEntry.CheckExistToken(DB, tokenString)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"code":    http.StatusUnauthorized,
+			"message": "Hết phiên đăng nhập!",
+		})
+		return
+	}
+	if userToken.Exp.Unix() < time.Now().Unix() {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"code":    http.StatusUnauthorized,
+			"message": "Hết phiên đăng nhập!",
+		})
+		return
+	}
+	c.Set("device", device)
+	c.Set("userId", userToken.UserId)
+	c.Set("role", userToken.Role)
 	c.Next()
 }
 

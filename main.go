@@ -4,26 +4,20 @@ import (
 	"context"
 	"fmt"
 	"gin-gonic-gom/Controllers"
-	"gin-gonic-gom/Controllers/jobs"
 	"gin-gonic-gom/Routes"
 	statiscal "gin-gonic-gom/Services/statistical"
-	"gin-gonic-gom/Services/user"
 	"gin-gonic-gom/config"
 	_ "gin-gonic-gom/docs"
-	"gin-gonic-gom/utils"
-	"github.com/lpernett/godotenv"
-	"log"
-	"os"
-	"time"
-
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/lpernett/godotenv"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
+	"os"
 )
 
 // @Title  Manager Student Service API
@@ -33,18 +27,14 @@ import (
 // @Host localhost:4000
 // @BasePath /v1
 var (
-	server       *gin.Engine
-	us           user.UserService
-	uc           Controllers.UserController
+	server *gin.Engine
+	//uc           Controllers.UserController
 	statisticals statiscal.StatisticalService
 	statisticalc Controllers.StatisticalController
 	ctx          context.Context
 	userco       *mongo.Collection
 	tokenco      *mongo.Collection
 	otpco        *mongo.Collection
-	mediaco      *mongo.Collection
-	majorco      *mongo.Collection
-	subjectco    *mongo.Collection
 	termco       *mongo.Collection
 	scheduleco   *mongo.Collection
 	mongoClient  *mongo.Client
@@ -78,15 +68,6 @@ func InitializeConfig() {
 		os.Mkdir("uploads/images", os.ModePerm)
 	}
 	server = gin.Default()
-	//config cors
-	server.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"}, //client
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"},
-		ExposeHeaders:    []string{"Content-Length", "Content-Disposition"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
 	validate = validator.New()
 	//serve file
 	server.Static("/static", "./uploads")
@@ -94,31 +75,10 @@ func InitializeConfig() {
 func InitializeDatabase() {
 	ctx = context.TODO()
 	mongoCon, _ := config.Connect(ctx)
-	// Users collection
-	userco = mongoCon.Collection("Users")
-	indexNameUser := "name_text"
-	indexUserExists, errIndex := utils.CheckIndexExists(ctx, userco, indexNameUser)
-	if errIndex != nil {
-		fmt.Println("Lỗi trong quá trình kiểm tra tồn tại index")
-	}
-	if !indexUserExists {
-		indexUserModel := createIndex("name", "text")
-		_, err := userco.Indexes().CreateOne(context.TODO(), indexUserModel)
-		if err != nil {
-			fmt.Println("Lỗi trong quá trình tạo index collection Users")
-		}
-	} else {
-		fmt.Println("Index already exists:", indexNameUser)
-	}
 	// Token collection
 	tokenco = mongoCon.Collection("Tokens")
 	// OTP collection
 	otpco = mongoCon.Collection("OTPs")
-	//Schedule collection
-	scheduleco = mongoCon.Collection("Schedules")
-
-	us = user.NewUserService(userco, majorco, tokenco, otpco, ctx)
-	uc = Controllers.New(us)
 
 	statisticals = statiscal.NewStatisticalService(termco, ctx)
 	statisticalc = Controllers.NewStatistical(statisticals)
@@ -141,11 +101,12 @@ func main() {
 	server.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	//REST API
 	basepath := server.Group("/v1/api")
+	//middleware cors
 	Routes.Router(basepath)
 	//uc.RegisterAuthRoutes(basepath)
 	//statisticalc.RegisterStatisticalRoutes(basepath)
 	//schedulec.RegisterScheduleRoutes(basepath)
-	jobs.JobRunner(us)
+	//jobs.JobRunner(us)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "4000" // Giá trị mặc định nếu không có biến môi trường PORT

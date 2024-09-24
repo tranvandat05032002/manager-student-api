@@ -1,84 +1,52 @@
 package utils
 
 import (
-	"fmt"
-	"gin-gonic-gom/Models"
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
-func GenerateAccessToken(exp time.Duration, user *Models.UserModel, secretJWTKey string) (string, error) {
+func GenerateAccessToken(userId primitive.ObjectID, role string, secretJWTKey string) (string, error) {
 	now := time.Now().UTC()
-	expirationTimeUTCPlus7 := ConvertDurationToTimeUTC(exp)
+	//expirationTimeUTCPlus7 := ConvertDurationToTimeUTC(exp)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID": user.Id,
-		"exp":    expirationTimeUTCPlus7.Unix(),
+		"userID": userId,
+		"exp":    time.Now().Add(2 * time.Minute).Unix(),
 		"iat":    now.Unix(),
-		"role":   user.Role,
+		"role":   role,
 	})
 	return token.SignedString([]byte(secretJWTKey))
 }
-func GenerateRefreshToken(exp time.Duration, user *Models.UserModel, secretJWTKey string) (string, error) {
+func GenerateRefreshToken(userId primitive.ObjectID, role string, secretJWTKey string) (string, error) {
 	now := time.Now().UTC()
-	expirationTimeUTCPlus7 := ConvertDurationToTimeUTC(exp)
+	//expirationTimeUTCPlus7 := ConvertDurationToTimeUTC(exp)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userID": user.Id,
-		"exp":    expirationTimeUTCPlus7.Unix(),
+		"userID": userId,
+		"exp":    time.Now().Add(72 * time.Hour).Unix(),
 		"iat":    now.Unix(),
-		"role":   user.Role,
+		"role":   role,
 	})
 	return token.SignedString([]byte(secretJWTKey))
 }
 
-type TokenType struct {
-	UserId string    `json:"userID"`
-	Exp    time.Time `json:"exp"`
-	Iat    time.Time `json:"iat"`
+type ClaimsType struct {
+	UserId string           `json:"userID"`
+	Role   string           `json:"role"`
+	Exp    *jwt.NumericDate `json:"exp"`
+	Iat    *jwt.NumericDate `json:"iat"`
+	jwt.RegisteredClaims
 }
 
-func DecodedToken(tokenString string, secretkey []byte) (jwt.MapClaims, error) {
-	//claims := &TokenType{}
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+func DecodedToken(tokenString string, secretkey string) (*ClaimsType, error) {
+	claims := &ClaimsType{}
+
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secretkey), nil
+	})
+	if token != nil {
+		if claims, ok := token.Claims.(*ClaimsType); ok && token.Valid {
+			return claims, nil
 		}
-		return secretkey, nil
-	})
-	//fmt.Println("UserId: ", claims.UserId)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing token: %w", err)
 	}
-	if !token.Valid {
-		return nil, fmt.Errorf("invalid token")
-	}
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		fmt.Errorf("Claims Error")
-	}
-	return claims, nil
-	//return claims, nil
-
-	//token, err := jwt.Parse("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0dGwiOjE3MzIzMzY1OTMsInVzZXJJRCI6IjY2YmFlMGQyMDdiOGI5NTUyOTY1ZGNkMyJ9.y1Yyhz3IBOyzrqZrOH-ERfBUNpFxul6igHZ3BNNixsI", func(token *jwt.Token) (interface{}, error) {
-	//	// Don't forget to validate the alg is what you expect:
-	//	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-	//		return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-	//	}
-	//
-	//	// TODO: Move this to env variable.
-	//
-	//	// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-	//	return secretkey, nil
-	//})
-	//if err != nil {
-	//	c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-	//	c.Abort()
-	//	return
-	//}
-
-	//claims, ok := token.Claims.(jwt.MapClaims)
-	//if !ok {
-	//	c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-	//	c.Abort()
-	//	return
-	//}
+	return claims, err
 }
