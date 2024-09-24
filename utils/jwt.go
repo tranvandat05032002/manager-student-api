@@ -11,7 +11,7 @@ func GenerateAccessToken(userId primitive.ObjectID, role string, secretJWTKey st
 	//expirationTimeUTCPlus7 := ConvertDurationToTimeUTC(exp)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userID": userId,
-		"exp":    time.Now().Add(2 * time.Minute).Unix(),
+		"exp":    time.Now().Add(24 * time.Hour).Unix(),
 		"iat":    now.Unix(),
 		"role":   role,
 	})
