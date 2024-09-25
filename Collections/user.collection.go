@@ -2,6 +2,7 @@ package Collections
 
 import (
 	"context"
+	"errors"
 	"gin-gonic-gom/config"
 	"gin-gonic-gom/constant"
 	"gin-gonic-gom/utils"
@@ -106,6 +107,15 @@ func (u *UserModel) FindByEmail(DB *mongo.Database, email string) (*UserModel, e
 	}
 	return u, nil
 }
+func (u *UserModel) UpdateOne(DB *mongo.Database, filter interface{}, data interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+	_, err := DB.Collection(u.GetCollectionName()).UpdateOne(ctx, filter, data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func (u *UserModel) FindOne(DB *mongo.Database, filter interface{}, opts *options.FindOneOptions) (*UserModel, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
 	defer cancel()
@@ -115,7 +125,181 @@ func (u *UserModel) FindOne(DB *mongo.Database, filter interface{}, opts *option
 	}
 	return u, nil
 }
+func (u *UserModel) ResetPasswordByOTP(DB *mongo.Database, email, otpToken, password string) error {
+	var otpEntry OTPModel
+	user, err := u.FindByEmail(DB, email)
+	if err != nil {
+		return errors.New("Không tìm thấy user!")
+	}
+	filter := bson.D{
+		{"user_id", user.Id},
+		{"otp_code", otpToken},
+	}
+	res, err := otpEntry.FindOne(DB, filter)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return errors.New("OTP không hợp lệ!")
+		}
+		return errors.New("Người dùng không có trong hệ thống!")
+	}
+	// kiểm tra thời gian hết hạn của token
+	timeNowUTC := time.Now().UTC()
+	if timeNowUTC.After(res.ExpiresAt) {
+		return errors.New("OTP đã hết hạn!")
+	}
+	if otpToken != res.OTPCode {
+		return errors.New("OTP không đúng!")
+	}
+	// hash new password
+	hashPassword, _ := utils.HashPassword(password)
+	// update password
+	filterUpdate := bson.M{"_id": user.Id}
+	update := bson.D{
+		{"$set", bson.D{{"password", hashPassword}}},
+	}
+	err = user.UpdateOne(DB, filterUpdate, update)
+	if err != nil {
+		return errors.New("Lấy lại mật khẩu thất bại!")
+	}
+	err = otpEntry.DeleteOne(DB, filter)
+	if err != nil {
+		return errors.New("Lỗi khi xóa OTP!")
+	}
+	return nil
+}
+func (u *UserModel) Count(DB *mongo.Database, filter interface{}) (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+	if total, err := DB.Collection(u.GetCollectionName()).CountDocuments(ctx, filter, options.Count()); err != nil {
+		return 0, err
+	} else {
+		return total, nil
+	}
+}
+func (u *UserModel) Find(DB *mongo.Database, limit, skip int) (Users, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
+	cur, err := DB.Collection(u.GetCollectionName()).Find(ctx, bson.D{{"role_type", bson.D{{"$ne", "admin"}}}}, opts)
+	defer cur.Close(ctx)
+	var users Users
+	for cur.Next(ctx) {
+		var user UserModel
+		err := cur.Decode(&user)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+	return users, err
+}
+func (u *UserModel) UpdateMe(DB *mongo.Database, filter interface{}, data interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+	update := utils.BuildUpdateQuery(data)
+	update["updated_at"] = time.Now()
+	dataUpdate := bson.M{"$set": update}
+	_, err := DB.Collection(u.GetCollectionName()).UpdateOne(ctx, filter, dataUpdate)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
+func (u *UserModel) Update(DB *mongo.Database, filter interface{}, data interface{}, majorId primitive.ObjectID) error {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+	update := utils.BuildUpdateQuery(data)
+	update["major_id"] = majorId
+	update["updated_at"] = time.Now()
+	dataUpdate := bson.M{"$set": update}
+	_, err := DB.Collection(u.GetCollectionName()).UpdateOne(ctx, filter, dataUpdate)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u *UserModel) Search(DB *mongo.Database, name string, skip, limit int) (Users, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+
+	totalCount, err := DB.Collection(u.GetCollectionName()).CountDocuments(ctx, bson.D{{"$text", bson.D{{"$search", name}}}})
+	pipeline := bson.A{
+		bson.D{{"$match", bson.D{{"$text", bson.D{{"$search", name}}}}}},
+		bson.D{{"$skip", skip}},
+		bson.D{{"$limit", limit}},
+	}
+	var users Users
+	cursor, err := DB.Collection(u.GetCollectionName()).Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+	if err = cursor.All(ctx, &users); err != nil {
+		return nil, 0, err
+	}
+	return users, int(totalCount), nil
+}
+
+func (u *UserModel) GetByRole(DB *mongo.Database, role string, skip, limit int) (Users, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
+	filter := bson.M{
+		"$and": bson.A{
+			bson.M{"role_type": role},
+			bson.M{"depending_delete": constant.NOTDEPENDING},
+		},
+	}
+	cur, err := DB.Collection(u.GetCollectionName()).Find(ctx, filter, opts)
+	total, err := u.Count(DB, filter)
+	defer cur.Close(ctx)
+	var students Users
+	for cur.Next(ctx) {
+		var student UserModel
+		err := cur.Decode(&student)
+		if err != nil {
+			return nil, 0, err
+		}
+		students = append(students, student)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, 0, err
+	}
+	return students, int(total), err
+}
+
+//func (u *UserModel) ChangePass
+//// Kiểm tra tra mật khẩu mới và confirmPassword
+//if passwordInput.NewPassword != passwordInput.ConfirmNewPassword {
+//return errors.New("Mật khẩu mới không khớp")
+//}
+//var user *Models.UserModel
+//filter := bson.M{"_id": utils.ConvertStringToObjectId(userId)}
+//err := a.usercollection.FindOne(a.ctx, filter).Decode(&user)
+//if err != nil {
+//return errors.New("Không tìm thấy user!")
+//}
+//// kiểm tra mật khâ cũ
+//if !utils.CheckPasswordHash(passwordInput.OlderPassword, user.Password) {
+//return errors.New("Mật khẩu cũ không đúng!")
+//}
+//// Hash mật khẩu mới
+//hashNewPassword, err := utils.HashPassword(passwordInput.NewPassword)
+//if err != nil {
+//return errors.New("Lỗi khi hash mật khẩu mới!")
+//}
+//// Cập nhật mật khẩu
+//update := bson.M{"$set": bson.M{"password": hashNewPassword}}
+//_, err = a.usercollection.UpdateOne(a.ctx, filter, update)
+//if err != nil {
+//return errors.New("Thay đổi mật khẩu thất bại!")
+//}
+//return nil
 //package user
 //
 //import (

@@ -14,28 +14,28 @@ func AuthRoutes(auth *gin.RouterGroup) {
 		authRoute.POST("/find-email", Controllers.FindEmail)
 		authRoute.POST("/otp/verify-otp", Controllers.VerifyOTP)
 		authRoute.POST("/otp/resend-otp", Controllers.ResendOTP)
-		//userRoute.POST("/forgot-password", authController.ForgotPasswordByOTP)
+		authRoute.POST("/forgot-password", Controllers.ResetPassword)
 		authRoute.Use(Middlewares.AuthValidationBearerMiddleware)
 		{
 			authRoute.GET("/me", Controllers.GetMe)
 			authRoute.POST("/logout", Controllers.SignOut)
-			//userRoute.GET("/:user_id", authController.GetAccount)
-			//userRoute.PATCH("/me/update", authController.UpdateMe)
-			//userRoute.PUT("/change-password", authController.ChangePassword)
+			authRoute.GET("/:user_id", Controllers.GetDetailUser)
+			authRoute.PATCH("/me/update", Controllers.UpdateMe)
+			authRoute.PUT("/change-password", Controllers.ChangePassword)
 		}
 	}
 	// Admin
-	//adminRoute := rg.Group("/admin")
-	//adminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
-	//adminRoute.Use(Middlewares.RoleMiddleware("admin"))
-	//{
-	//	adminRoute.GET("/all", authController.GetAll)
-	//	adminRoute.GET("/user/search", authController.SearchUser)
-	//	adminRoute.GET("/user/student/all", authController.GetAllUserRoleIsStudent)
-	//	adminRoute.GET("/user/teacher/all", authController.GetAllUserRoleIsTeacher)
-	//	adminRoute.PATCH("/update/:id", authController.UpdateUser)
-	//	adminRoute.DELETE("/delete/:user_id", authController.DeleteUser)
-	//	adminRoute.GET("/user/pending-deletion", authController.GetListUserDependingDeletion)
-	//	adminRoute.PATCH("/user/restore/:id", authController.RestoreUser)
-	//}
+	adminRoute := auth.Group("/admin")
+	adminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
+	adminRoute.Use(Middlewares.RoleMiddleware("admin"))
+	{
+		adminRoute.GET("/all", Controllers.GetAll)
+		adminRoute.GET("/user/search", Controllers.SearchUser)
+		adminRoute.GET("/user/student/all", Controllers.GetStudent)
+		adminRoute.GET("/user/teacher/all", Controllers.GetTeacher)
+		adminRoute.PATCH("/update/:id", Controllers.UpdateUser)
+		//	adminRoute.DELETE("/delete/:user_id", authController.DeleteUser)
+		//	adminRoute.GET("/user/pending-deletion", authController.GetListUserDependingDeletion)
+		//	adminRoute.PATCH("/user/restore/:id", authController.RestoreUser)
+	}
 }

@@ -5,10 +5,12 @@ import (
 	"gin-gonic-gom/Common"
 	"gin-gonic-gom/Models"
 	"gin-gonic-gom/config"
+	"gin-gonic-gom/constant"
 	"gin-gonic-gom/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"net/http"
 	"os"
@@ -25,6 +27,31 @@ type FindEmailForm struct {
 type OTPForm struct {
 	Email   string `json:"email" bson:"-"`
 	OTPCode string `json:"otp_code" bson:"-"`
+}
+type ForgotPasswordForm struct {
+	Email           string `json:"email" bson:"-" binding:"required,email"`
+	OtpToken        string `json:"otp_token" bson:"-" binding:"required"`
+	NewPassword     string `json:"new_password,omitempty" bson:"-" binding:"required,min=6,max=30"`
+	ConfirmPassword string `json:"confirm_password,omitempty" bson:"-" binding:"required,min=6,max=30"`
+}
+type ChangePasswordForm struct {
+	OlderPassword      string `json:"older_password" binding:"required,min=6,max=30"`
+	NewPassword        string `json:"new_password,omitempty" binding:"required,min=6,max=30"`
+	ConfirmNewPassword string `json:"confirm_new_password,omitempty" binding:"required,min=6,max=30"`
+}
+type UserUpdate struct {
+	MajorId        primitive.ObjectID `json:"major_id"`
+	Email          string             `json:"email" bson:"email"`
+	Role           string             `json:"role_type" bson:"role_type"`
+	Phone          string             `json:"phone" bson:"phone"`
+	Name           string             `json:"name" bson:"name"`
+	Avatar         string             `json:"avatar" bson:"avatar"`
+	Gender         int                `json:"gender" bson:"gender"`
+	Department     string             `json:"department" bson:"department"`
+	DateOfBirth    time.Time          `json:"date_of_birth" bson:"dateOfBirth"`
+	EnrollmentDate time.Time          `json:"enrollment_date" bson:"enrollmentDate"`
+	HireDate       time.Time          `json:"hire_date" bson:"hireDate"`
+	Address        string             `json:"address" bson:"address"`
 }
 
 func PostUser(c *gin.Context) {
@@ -280,4 +307,224 @@ func ResendOTP(c *gin.Context) {
 	}
 	_ = utils.SendSecretCodeToEmail(userEntry.Email, otp, otpHash)
 	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Đã gửi lại mã OTP thành công!!!", otp))
+}
+func ResetPassword(c *gin.Context) {
+	var request ForgotPasswordForm
+	if err := c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+		//Logger
+		//Response
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
+		return
+	}
+	var (
+		DB        = config.GetMongoDB()
+		err       error
+		userEntry Collections.UserModel
+	)
+	if request.NewPassword != request.ConfirmPassword {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Mật khẩu không khớp!", "")
+		return
+	}
+	err = userEntry.ResetPasswordByOTP(DB, request.Email, request.OtpToken, request.NewPassword)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorUpdatePassword, nil)
+		return
+	}
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Reset Password Success!!", nil))
+}
+
+func ChangePassword(c *gin.Context) {
+	var request ChangePasswordForm
+	userId, exists := c.Get("userId")
+	if !exists {
+		Common.NewErrorResponse(c, http.StatusNotFound, Common.ErrorFindUser, "")
+		return
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
+		return
+	}
+	if request.NewPassword != request.ConfirmNewPassword {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Mật khẩu không khớp!", nil)
+		return
+	}
+	var (
+		DB        = config.GetMongoDB()
+		userEntry Collections.UserModel
+	)
+	filter := bson.M{
+		"_id": utils.ConvertStringToObjectId(userId.(string)),
+	}
+
+	_, err := userEntry.FindOne(DB, filter, nil)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Không tìm thấy người dùng!", nil)
+		return
+	}
+	if !utils.CheckPasswordHash(request.OlderPassword, userEntry.Password) {
+		Common.NewErrorResponse(c, http.StatusBadRequest, " Mật khẩu cũ không đúng", nil)
+		return
+	}
+	// Hash lai mat khau moi
+	hashNewPassword, err := utils.HashPassword(request.NewPassword)
+	// Cập nhật mật khẩu
+	update := bson.M{"$set": bson.M{"password": hashNewPassword}}
+	err = userEntry.UpdateOne(DB, filter, update)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Thay đổi mật khẩu thất bại!", err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Thay đổi mật khẩu thành công", nil))
+}
+func GetDetailUser(c *gin.Context) {
+	userId := c.Param("user_id")
+	var (
+		DB        = config.GetMongoDB()
+		userEntry Collections.UserModel
+	)
+	filter := bson.M{
+		"_id": utils.ConvertStringToObjectId(userId),
+	}
+	res, err := userEntry.FindOne(DB, filter, options.FindOne())
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusNotFound, Common.ErrorFindUser, err.Error())
+		return
+	}
+	c.JSON(
+		http.StatusOK,
+		Common.SimpleSuccessResponse(http.StatusOK, "Get user thành công!", res),
+	)
+}
+func UpdateMe(c *gin.Context) {
+	request := UserUpdate{}
+	userId, exists := c.Get("userId")
+	if !exists {
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorFindUser, "")
+		return
+	}
+	var (
+		userEntry Collections.UserModel
+		DB        = config.GetMongoDB()
+		err       error
+		//Other config
+		//.......
+	)
+	if err = c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+		//Logger
+		//Response
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
+		return
+	}
+	filter := bson.M{
+		"_id": utils.ConvertStringToObjectId(userId.(string)),
+	}
+	err = userEntry.UpdateMe(DB, filter, request)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Cập nhật thất bại!", err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Cập nhật thành công!", nil))
+}
+func GetAll(c *gin.Context) {
+	var (
+		userEntry Collections.UserModel
+		DB        = config.GetMongoDB()
+		err       error
+		//Other config
+		//.......
+	)
+	page, limit, skip := utils.Pagination(c)
+	filter := bson.D{
+		{"role_type", bson.D{{"$ne", "admin"}}},
+	}
+	total, _ := userEntry.Count(DB, filter)
+	res, err := userEntry.Find(DB, limit, skip)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách users thành công", res, int(total), page, limit))
+}
+func SearchUser(c *gin.Context) {
+	var (
+		userEntry Collections.UserModel
+		DB        = config.GetMongoDB()
+		err       error
+		//Other config
+		//.......
+	)
+
+	query := c.Query("name")
+	page, limit, skip := utils.Pagination(c)
+	res, total, err := userEntry.Search(DB, query, skip, limit)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Tìm kiếm xảy ra lỗi!", err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Tìm kiếm môn học thành công!!", res, total, page, limit))
+}
+
+func GetStudent(c *gin.Context) {
+	var (
+		userEntry Collections.UserModel
+		DB        = config.GetMongoDB()
+		err       error
+		//Other config
+		//.......
+	)
+
+	page, limit, skip := utils.Pagination(c)
+	res, total, err := userEntry.GetByRole(DB, constant.STUDENT, skip, limit)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách sinh viên thành công", res, total, page, limit))
+}
+func GetTeacher(c *gin.Context) {
+	var (
+		userEntry Collections.UserModel
+		DB        = config.GetMongoDB()
+		err       error
+		//Other config
+		//.......
+	)
+
+	page, limit, skip := utils.Pagination(c)
+	res, total, err := userEntry.GetByRole(DB, constant.TEACHER, skip, limit)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách giáo viên thành công", res, total, page, limit))
+}
+func UpdateUser(c *gin.Context) {
+	request := UserUpdate{}
+	id := c.Param("id")
+	var (
+		userEntry Collections.UserModel
+		DB        = config.GetMongoDB()
+		err       error
+		//Other config
+		//.......
+	)
+	if err = c.ShouldBindBodyWith(&request, binding.JSON); err != nil {
+		//Logger
+		//Response
+		errorMessages := utils.GetErrorMessagesResponse(err)
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorShouldBindDataMessage, errorMessages)
+		return
+	}
+	filter := bson.M{
+		"_id": utils.ConvertStringToObjectId(id),
+	}
+	err = userEntry.Update(DB, filter, request, request.MajorId)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Cập nhật thất bại!", err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Cập nhật thành công!", nil))
 }

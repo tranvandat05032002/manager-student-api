@@ -212,3 +212,12 @@ func (o *OTPModel) ResendOTP(DB *mongo.Database, id primitive.ObjectID, otpHash 
 	}
 	return true, nil
 }
+func (o *OTPModel) DeleteOne(DB *mongo.Database, filter interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+	_, err := DB.Collection(o.GetCollectionNameSecondary()).DeleteOne(ctx, filter)
+	if err != nil {
+		return err
+	}
+	return nil
+}
