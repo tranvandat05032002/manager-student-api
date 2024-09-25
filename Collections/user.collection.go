@@ -10,6 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -289,15 +291,15 @@ func (u *UserModel) DeleteBackUp(DB *mongo.Database, filter interface{}) error {
 		return err
 	}
 	//Dat key trong Redis voi TTL 10p
-	//duration, err := strconv.Atoi(os.Getenv("REDIS_DURATION"))
-	//if err != nil {
-	//	return errors.New("Xảy ra lỗi trong quá trình chuyển string sang int")
-	//}
-	//keyUser := "user:" + userId
-	//err = utils.SetCacheInterface(keyUser, userDelete, duration)
-	//if err != nil {
-	//	return err
-	//}
+	duration, err := strconv.Atoi(os.Getenv("REDIS_DURATION"))
+	if err != nil {
+		return errors.New("Xảy ra lỗi trong quá trình chuyển string sang int")
+	}
+	keyUser := u.Id.Hex()
+	err = utils.SetCacheInterface(keyUser, u, duration)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -331,6 +333,20 @@ func (u *UserModel) FindByStatus(DB *mongo.Database, filter interface{}, skip, l
 		return nil, 0, err
 	}
 	return users, int(total), err
+}
+func (u *UserModel) RestoreUser(DB *mongo.Database, filter interface{}) error {
+	// Xóa user trong redis
+	update := bson.M{
+		"$set": bson.M{
+			"depending_delete": constant.NOTDEPENDING,
+			"delete_at":        nil,
+		},
+	}
+	err := u.UpdateOne(DB, filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //func (u *UserModel) ChangePass

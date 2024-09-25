@@ -13,7 +13,7 @@ func MajorRoutes(major *gin.RouterGroup) {
 		majorAdminRoute.Use(Middlewares.RoleMiddleware("admin"))
 		{
 			majorAdminRoute.GET("/details/:id", Controllers.GetDetailMajor)
-			majorAdminRoute.GET("/all", Controllers.GetAllMajors)
+			majorAdminRoute.GET("/list", Controllers.GetAllMajors)
 			majorAdminRoute.POST("/add", Controllers.CreateMajor)
 			majorAdminRoute.GET("/search", Controllers.SearchMajor)
 			majorAdminRoute.DELETE("/:id", Controllers.DeleteMajor)

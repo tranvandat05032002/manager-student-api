@@ -15,4 +15,5 @@ func Router(rg *gin.RouterGroup) {
 	MediaRoutes(rg)
 	TermRoutes(rg)
 	ScheduleRoutes(rg)
+	StatisticalRoutes(rg)
 }

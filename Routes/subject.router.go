@@ -12,7 +12,7 @@ func SubjectRoutes(subject *gin.RouterGroup) {
 		subjectAdminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
 		subjectAdminRoute.Use(Middlewares.RoleMiddleware("admin"))
 		{
-			subjectAdminRoute.GET("/all", Controllers.GetAllSubjects)
+			subjectAdminRoute.GET("/list", Controllers.GetAllSubjects)
 			subjectAdminRoute.GET("/details/:id", Controllers.GetSubjectDetail)
 			subjectAdminRoute.POST("/add", Controllers.CreateSubject)
 			subjectAdminRoute.GET("/search", Controllers.SearchSubject)

@@ -29,13 +29,13 @@ func AuthRoutes(auth *gin.RouterGroup) {
 	adminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
 	adminRoute.Use(Middlewares.RoleMiddleware("admin"))
 	{
-		adminRoute.GET("/all", Controllers.GetAll)
+		adminRoute.GET("/list", Controllers.GetAll)
 		adminRoute.GET("/user/search", Controllers.SearchUser)
-		adminRoute.GET("/user/student/all", Controllers.GetStudent)
-		adminRoute.GET("/user/teacher/all", Controllers.GetTeacher)
+		adminRoute.GET("/user/students", Controllers.GetStudent)
+		adminRoute.GET("/user/teachers", Controllers.GetTeacher)
 		adminRoute.PATCH("/update/:id", Controllers.UpdateUser)
 		adminRoute.DELETE("/delete/:user_id", Controllers.DeleteUser)
 		adminRoute.GET("/user/pending-deletion", Controllers.GetUserDepending)
-		//	adminRoute.PATCH("/user/restore/:id", authController.RestoreUser)
+		adminRoute.PATCH("/user/restore/:id", Controllers.RestoreUser)
 	}
 }

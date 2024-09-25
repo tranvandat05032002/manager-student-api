@@ -19,7 +19,7 @@ func ScheduleRoutes(rg *gin.RouterGroup) {
 		adminsScheduleRoute.Use(Middlewares.AuthValidationBearerMiddleware)
 		adminsScheduleRoute.Use(Middlewares.RoleMiddleware("admin"))
 		{
-			adminsScheduleRoute.GET("/all", Controllers.GetAllSchedules)
+			adminsScheduleRoute.GET("/list", Controllers.GetAllSchedules)
 			adminsScheduleRoute.GET("/details/:id", Controllers.GetDetailSchedule)
 			adminsScheduleRoute.POST("/add", Controllers.CreateSchedule)
 			adminsScheduleRoute.PATCH("/:id", Controllers.UpdateSchedule)

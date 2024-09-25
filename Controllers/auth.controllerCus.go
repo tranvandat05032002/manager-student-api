@@ -1,6 +1,7 @@
 package Controllers
 
 import (
+	"fmt"
 	"gin-gonic-gom/Collections"
 	"gin-gonic-gom/Common"
 	"gin-gonic-gom/Models"
@@ -560,4 +561,28 @@ func GetUserDepending(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách sinh viên đang chờ xóa thành công", res, total, page, limit))
+}
+
+func RestoreUser(c *gin.Context) {
+	userId := c.Param("id")
+	var (
+		DB        = config.GetMongoDB()
+		err       error
+		userEntry Collections.UserModel
+	)
+	filter := bson.M{
+		"_id": utils.ConvertStringToObjectId(userId),
+	}
+	err = utils.DelCache(utils.ConvertStringToObjectId(userId).Hex())
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Xảy ra lỗi khi xóa cache", err.Error())
+		return
+	}
+	err = userEntry.RestoreUser(DB, filter)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorDeleteUser, err.Error())
+		return
+	}
+	message := fmt.Sprintf("khôi phục tài khoản %s", userId)
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, message, nil))
 }

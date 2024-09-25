@@ -12,7 +12,7 @@ func TermRoutes(term *gin.RouterGroup) {
 		termAdminRoute.Use(Middlewares.AuthValidationBearerMiddleware)
 		termAdminRoute.Use(Middlewares.RoleMiddleware("admin"))
 		{
-			termAdminRoute.GET("/all", Controllers.GetAllTerms)
+			termAdminRoute.GET("/list", Controllers.GetAllTerms)
 			termAdminRoute.GET("/details/:id", Controllers.GetTermDetail)
 			termAdminRoute.POST("/add", Controllers.CreateTerm)
 			termAdminRoute.DELETE("/:id", Controllers.DeleteTerm)
