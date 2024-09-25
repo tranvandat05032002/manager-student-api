@@ -34,8 +34,8 @@ func AuthRoutes(auth *gin.RouterGroup) {
 		adminRoute.GET("/user/student/all", Controllers.GetStudent)
 		adminRoute.GET("/user/teacher/all", Controllers.GetTeacher)
 		adminRoute.PATCH("/update/:id", Controllers.UpdateUser)
-		//	adminRoute.DELETE("/delete/:user_id", authController.DeleteUser)
-		//	adminRoute.GET("/user/pending-deletion", authController.GetListUserDependingDeletion)
+		adminRoute.DELETE("/delete/:user_id", Controllers.DeleteUser)
+		adminRoute.GET("/user/pending-deletion", Controllers.GetUserDepending)
 		//	adminRoute.PATCH("/user/restore/:id", authController.RestoreUser)
 	}
 }

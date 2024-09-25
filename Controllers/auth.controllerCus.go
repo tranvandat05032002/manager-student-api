@@ -528,3 +528,36 @@ func UpdateUser(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Cập nhật thành công!", nil))
 }
+func DeleteUser(c *gin.Context) {
+	var (
+		DB        = config.GetMongoDB()
+		err       error
+		userEntry Collections.UserModel
+	)
+	userId := c.Param("user_id")
+	filter := bson.M{
+		"_id": utils.ConvertStringToObjectId(userId),
+	}
+	err = userEntry.DeleteBackUp(DB, filter)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, Common.ErrorDeleteUser, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, Common.SimpleSuccessResponse(http.StatusOK, "Xóa thành công account", nil))
+}
+func GetUserDepending(c *gin.Context) {
+	var (
+		DB        = config.GetMongoDB()
+		err       error
+		userEntry Collections.UserModel
+	)
+
+	page, limit, skip := utils.Pagination(c)
+	filter := bson.M{"depending_delete": constant.ISDEPENDING}
+	res, total, err := userEntry.FindByStatus(DB, filter, skip, limit)
+	if err != nil {
+		Common.NewErrorResponse(c, http.StatusBadRequest, "Không thể lấy thông tin!", err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, Common.NewSuccessResponse(http.StatusOK, "Lấy danh sách sinh viên đang chờ xóa thành công", res, total, page, limit))
+}

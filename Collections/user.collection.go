@@ -272,6 +272,66 @@ func (u *UserModel) GetByRole(DB *mongo.Database, role string, skip, limit int) 
 	}
 	return students, int(total), err
 }
+func (u *UserModel) DeleteBackUp(DB *mongo.Database, filter interface{}) error {
+	data := bson.D{
+		{"depending_delete", constant.ISDEPENDING},
+		{"delete_at", time.Now()},
+	}
+	updateData := bson.D{
+		{"$set", data},
+	}
+	err := u.UpdateOne(DB, filter, updateData)
+	if err != nil {
+		return err
+	}
+	_, err = u.FindOne(DB, filter, options.FindOne())
+	if err != nil {
+		return err
+	}
+	//Dat key trong Redis voi TTL 10p
+	//duration, err := strconv.Atoi(os.Getenv("REDIS_DURATION"))
+	//if err != nil {
+	//	return errors.New("Xảy ra lỗi trong quá trình chuyển string sang int")
+	//}
+	//keyUser := "user:" + userId
+	//err = utils.SetCacheInterface(keyUser, userDelete, duration)
+	//if err != nil {
+	//	return err
+	//}
+	return nil
+}
+
+func (u *UserModel) DeleteOne(DB *mongo.Database, filter interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+	_, err := DB.Collection(u.GetCollectionName()).DeleteOne(ctx, filter)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u *UserModel) FindByStatus(DB *mongo.Database, filter interface{}, skip, limit int) (Users, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), config.CTimeOut)
+	defer cancel()
+	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit))
+	cur, err := DB.Collection(u.GetCollectionName()).Find(ctx, filter, opts)
+	total, err := u.Count(DB, filter)
+	defer cur.Close(ctx)
+	var users Users
+	for cur.Next(ctx) {
+		var user UserModel
+		err := cur.Decode(&user)
+		if err != nil {
+			return nil, 0, err
+		}
+		users = append(users, user)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, 0, err
+	}
+	return users, int(total), err
+}
 
 //func (u *UserModel) ChangePass
 //// Kiểm tra tra mật khẩu mới và confirmPassword
